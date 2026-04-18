@@ -57,16 +57,6 @@ const ClientArea = () => {
                             <p style={{ color: '#666', fontSize: '0.9rem' }}>A administração já recebeu sua solicitação. Assim que seu cadastro for validado com o contrato, o acesso será liberado.</p>
                             <button className="btn btn-secondary" style={{ width: '100%', marginTop: '20px' }} onClick={() => setAwaitingApproval(false)}>Voltar ao Login</button>
                         </>
-                    ) : viewRequested ? (
-                        <>
-                            <h3 style={{ marginBottom: '10px' }}>Solicitar Acesso</h3>
-                            <p style={{ color: '#666', marginBottom: '20px', fontSize: '0.9rem' }}>Crie sua conta para acompanhar seu lote.</p>
-                            <input type="text" placeholder="Nome Completo" style={{ width: '100%', padding: '12px', margin: '10px 0', border: '1px solid #ddd', borderRadius: '8px' }} />
-                            <input type="text" placeholder="CPF" style={{ width: '100%', padding: '12px', margin: '10px 0', border: '1px solid #ddd', borderRadius: '8px' }} />
-                            <input type="text" placeholder="Lote / Quadra" style={{ width: '100%', padding: '12px', margin: '10px 0', border: '1px solid #ddd', borderRadius: '8px' }} />
-                            <button className="btn btn-primary" style={{ width: '100%', marginTop: '20px' }} onClick={() => setAwaitingApproval(true)}>Enviar Solicitação</button>
-                            <button style={{ background: 'none', border: 'none', marginTop: '15px', color: '#999', cursor: 'pointer' }} onClick={() => setViewRequested(false)}>Voltar ao Login</button>
-                        </>
                     ) : (
                         <>
                             <h3 style={{ marginBottom: '10px' }}>Portal do Cliente</h3>
@@ -74,7 +64,7 @@ const ClientArea = () => {
                             <input type="text" placeholder="CPF (Teste: 123)" style={{ width: '100%', padding: '12px', margin: '10px 0', border: '1px solid #ddd', borderRadius: '8px' }} value={cpf} onChange={e => setCpf(e.target.value)} />
                             <input type="password" placeholder="Senha" style={{ width: '100%', padding: '12px', margin: '10px 0', border: '1px solid #ddd', borderRadius: '8px' }} value={senha} onChange={e => setSenha(e.target.value)} />
                             <button className="btn btn-primary" style={{ width: '100%', marginTop: '20px' }} onClick={handleLogin}>Acessar Portal</button>
-                            <button style={{ background: 'none', border: 'none', marginTop: '20px', color: 'var(--color-river)', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setViewRequested(true)}>Primeiro acesso? Clique aqui.</button>
+                            <a href="/#mapa" style={{ display: 'block', marginTop: '20px', color: 'var(--color-river)', fontWeight: 'bold', textDecoration: 'none', cursor: 'pointer' }}>Primeiro acesso? Escolha seu lote aqui.</a>
                             <Link to="/" style={{ display: 'block', marginTop: '15px', color: '#999', fontSize: '0.8rem', textDecoration: 'none' }}>Voltar ao Site</Link>
                         </>
                     )}
