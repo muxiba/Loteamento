@@ -418,7 +418,11 @@ const AdminArea = () => {
                                             <ul style={{ paddingLeft: '20px', fontSize: '0.85rem' }}>
                                                 {editingLot.clientDocs.map((doc, idx) => (
                                                     <li key={idx} style={{ marginBottom: '5px' }}>
-                                                        <a href={doc.url} download={doc.name} style={{ color: 'var(--color-river)', fontWeight: 'bold' }}>{doc.name}</a>
+                                                        {doc.url === '#' ? (
+                                                            <button onClick={() => alert("O arquivo excedeu o limite do banco simulado e só pôde registrar o nome. Peça para atualizar pela nuvem.")} style={{ background: 'none', border: 'none', color: 'var(--color-river)', fontWeight: 'bold', textDecoration: 'underline', cursor: 'pointer' }}>{doc.name} (Simulado)</button>
+                                                        ) : (
+                                                            <a href={doc.url} download={doc.name} style={{ color: 'var(--color-river)', fontWeight: 'bold' }}>{doc.name}</a>
+                                                        )}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -918,6 +922,10 @@ const AdminArea = () => {
                                                                     <a href={pData.comprovanteUrl} download={pData.comprovanteName || "comprovante"} style={{ color: 'var(--color-river)', textDecoration: 'none', fontWeight: 'bold' }}>
                                                                         <i className="fas fa-eye"></i> Ver Comprovante
                                                                     </a>
+                                                                ) : pData.comprovanteUrl === '#' ? (
+                                                                    <button onClick={() => alert("Comprovante excedeu memória local; registrado apenas fisicamente ou na nuvem.")} style={{ background: 'none', border: 'none', color: 'var(--color-river)', fontWeight: 'bold', textDecoration: 'underline', cursor: 'pointer' }}>
+                                                                        <i className="fas fa-eye"></i> Ver Comprovante (Físico)
+                                                                    </button>
                                                                 ) : (
                                                                     <span style={{ color: '#999' }}>Aguardando Cliente</span>
                                                                 )}
@@ -1109,6 +1117,10 @@ const AdminArea = () => {
                                                                     <a href={pData.comprovanteUrl} download={pData.comprovanteName || "comprovante"} style={{ color: 'var(--color-river)', textDecoration: 'none', fontWeight: 'bold' }}>
                                                                         <i className="fas fa-eye"></i> Ver Comprovante
                                                                     </a>
+                                                                ) : pData.comprovanteUrl === '#' ? (
+                                                                    <button onClick={() => alert("Comprovante excedeu memória local; registrado apenas fisicamente ou na nuvem.")} style={{ background: 'none', border: 'none', color: 'var(--color-river)', fontWeight: 'bold', textDecoration: 'underline', cursor: 'pointer' }}>
+                                                                        <i className="fas fa-eye"></i> Ver Comprovante (Físico)
+                                                                    </button>
                                                                 ) : (
                                                                     <span style={{ color: '#999' }}>Aguardando Cliente</span>
                                                                 )}

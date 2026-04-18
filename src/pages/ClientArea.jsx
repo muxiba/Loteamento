@@ -176,10 +176,16 @@ const ClientArea = () => {
                                                     {valorParcelaBase.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                                 </td>
                                                 <td style={{ padding: '15px' }}>
-                                                    {paymentData.boletoUrl && paymentData.boletoUrl !== '#' ? (
-                                                        <a href={paymentData.boletoUrl} download={`Boleto_Parcela_${num}.pdf`} style={{ color: 'var(--color-river)', fontWeight: 'bold', textDecoration: 'none' }}>
-                                                            <i className="fas fa-barcode"></i> Baixar Boleto
-                                                        </a>
+                                                    {paymentData.boletoUrl ? (
+                                                        paymentData.boletoUrl === '#' ? (
+                                                            <button onClick={() => alert("O arquivo do boleto está salvo na Nuvem Segura e requer sincronização extra nesta versão de testes local. Peça para atualizar pela central.")} style={{ background: 'none', border: 'none', color: 'var(--color-river)', fontWeight: 'bold', textDecoration: 'underline', cursor: 'pointer' }}>
+                                                                <i className="fas fa-barcode"></i> Boleto Físico
+                                                            </button>
+                                                        ) : (
+                                                            <a href={paymentData.boletoUrl} download={paymentData.boletoName || `Boleto_Parcela_${num}`} style={{ color: 'var(--color-river)', fontWeight: 'bold', textDecoration: 'none' }}>
+                                                                <i className="fas fa-barcode"></i> Baixar Boleto
+                                                            </a>
+                                                        )
                                                     ) : (
                                                         <span style={{ color: '#999', fontSize: '0.8rem' }}>Pendente</span>
                                                     )}
