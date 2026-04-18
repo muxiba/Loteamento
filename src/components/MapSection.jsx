@@ -1,0 +1,297 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import mapaPlanta from '../assets/planta.jpg';
+
+const MapSection = ({ onSelectLotPrice }) => {
+    const [selectedLot, setSelectedLot] = useState(null);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [mappedLots, setMappedLots] = useState([]);
+
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const savedMapped = localStorage.getItem('db_mapped');
+        let mapped = [];
+        if (savedMapped) {
+            mapped = JSON.parse(savedMapped);
+            setMappedLots(mapped);
+        }
+
+        const savedLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
+        let foundAvailable = false;
+        
+        // Auto select first available lot
+        for (let m of mapped) {
+            const officialData = savedLots.find(l => l.id === m.id);
+            if (officialData && officialData.status !== 'Vendido') {
+                const enriched = {
+                    id: officialData.id,
+                    name: officialData.id,
+                    size: officialData.size,
+                    price: officialData.price,
+                    status: officialData.status,
+                    desc: officialData.desc,
+                    type: officialData.price > 150000 ? 'premium' : 'standard'
+                };
+                setSelectedLot(enriched);
+                if (onSelectLotPrice) onSelectLotPrice(enriched);
+                foundAvailable = true;
+                break;
+            }
+        }
+    }, []);
+
+    const getLotDetails = (lotId) => {
+        const savedLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
+        const officialData = savedLots.find(l => l.id === lotId);
+        
+        if (officialData) {
+            return {
+                id: officialData.id,
+                name: officialData.id,
+                size: officialData.size,
+                price: officialData.price,
+                status: officialData.status,
+                desc: officialData.desc,
+                type: officialData.price > 150000 ? 'premium' : 'standard'
+            };
+        }
+        return null;
+    };
+
+    const handleLotClick = (lotRect) => {
+        const enrichedLot = getLotDetails(lotRect.id);
+        setSelectedLot(enrichedLot);
+        if (enrichedLot && enrichedLot.status !== 'Vendido' && onSelectLotPrice) {
+            onSelectLotPrice(enrichedLot);
+        }
+    };
+
+    const scrollToProposta = () => {
+        // Redireciona o cliente para Módulo de Cadastro completo levando o ID do lote
+        navigate('/proposta', { state: { lotId: selectedLot?.id } });
+    };
+
+    return (
+        <section id="mapa" className="map-section" style={{ padding: '80px 5%', background: '#f9f7f2' }}>
+            <h2 className="section-title" style={{ textAlign: 'center', fontSize: '2.5rem', color: 'var(--color-forest)', fontFamily: "'Playfair Display', serif" }}>Mapa de Disponibilidade</h2>
+            <p className="section-subtitle" style={{ textAlign: 'center', color: '#666', maxWidth: '600px', margin: '0 auto 3rem auto' }}>Explore a planta. Os blocos coloridos foram mapeados pela administração. Clique neles para ver detalhes da disponibilidade.</p>
+            
+            <div className="map-container" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '40px', background: 'white', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', padding: '20px' }}>
+                
+                {/* Esquerda: Mapa Visual com a Planta Real e os Desenhados pelo Admin */}
+                <div style={{ position: 'relative', width: '100%', minHeight: '800px', backgroundColor: '#e8f5e9', borderRadius: '15px', overflow: 'hidden', border: '2px solid #ddd' }}>
+                    
+                    {/* BOTÃO AMPLIAR MAPA */}
+                    <button 
+                        onClick={() => setIsExpanded(true)}
+                        style={{
+                            position: 'absolute', top: '20px', right: '20px', zIndex: 20,
+                            background: 'white', border: 'none', padding: '10px 15px', borderRadius: '8px',
+                            boxShadow: '0 5px 15px rgba(0,0,0,0.2)', cursor: 'pointer', fontWeight: 'bold',
+                            color: 'var(--color-forest)', display: 'flex', alignItems: 'center', gap: '8px'
+                        }}>
+                        <i className="fas fa-expand-arrows-alt"></i> Ampliar Planta
+                    </button>
+
+                    {/* IMAGEM DE FUNDO DA PLANTA */}
+                    <div style={{
+                        position: 'absolute', inset: 0,
+                        backgroundImage: `url(${localStorage.getItem('mapa_customizado') || mapaPlanta})`, 
+                        backgroundSize: '100% 100%',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'center',
+                    }}></div>
+
+                    {/* Blocos Desenhados puxados do sistema do Admin */}
+                    {mappedLots.length === 0 && (
+                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(255,255,255,0.9)', padding: '20px', borderRadius: '10px', textAlign: 'center', fontWeight: 'bold' }}>
+                            Aguardando o Administrador entrar no Painel e "desenhar" os lotes sobre o mapa.
+                        </div>
+                    )}
+
+                    {mappedLots.map((lot, idx) => {
+                        const allLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
+                        const official = allLots.find(l => l.id === lot.id);
+                        const isSelected = selectedLot?.id === lot.id;
+                        const isVendido = official?.status === 'Vendido';
+                        const isReservado = official?.status === 'Reservado';
+
+                        // Cores dinâmicas
+                        let bgColor = 'rgba(107, 154, 196, 0.5)'; // Padrão
+                        let borderColor = 'rgba(255,255,255,0.5)';
+                        
+                        if (isVendido) {
+                            bgColor = 'rgba(100, 100, 100, 0.6)';
+                            borderColor = '#666';
+                        } else if (isReservado) {
+                            bgColor = 'rgba(255, 152, 0, 0.6)';
+                            borderColor = '#ff9800';
+                        } else {
+                            // Disponível
+                            bgColor = isSelected ? 'rgba(46, 125, 50, 0.9)' : 'rgba(76, 175, 80, 0.5)';
+                            borderColor = isSelected ? '#fff' : '#2e7d32';
+                        }
+
+                        let tooltipText = `Lote ${lot.id} - Disponível! Clique para simular.`;
+                        if (isVendido) tooltipText = `Lote ${lot.id} - Já Vendido (Indisponível)`;
+                        if (isReservado) tooltipText = `Lote ${lot.id} - Reservado (Em análise)`;
+
+                        return (
+                            <div 
+                                key={idx} 
+                                title={tooltipText}
+                                onClick={() => handleLotClick(lot)}
+                                style={{
+                                    position: 'absolute',
+                                    left: `${lot.left}%`,
+                                    top: `${lot.top}%`,
+                                    width: `${lot.width}%`,
+                                    height: `${lot.height}%`,
+                                    backgroundColor: bgColor,
+                                    border: isSelected ? '3px solid white' : `2px solid ${borderColor}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                                    cursor: isVendido ? 'not-allowed' : 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    zIndex: isSelected ? 10 : 1,
+                                    boxShadow: isSelected ? '0 0 20px rgba(0,0,0,0.3)' : 'none'
+                                }}
+                            >
+                                <span style={{ 
+                                    fontSize: isSelected ? '0.9rem' : '0.75rem', 
+                                    textAlign: 'center',
+                                    background: isSelected ? 'white' : 'rgba(255,255,255,0.85)',
+                                    color: isSelected ? 'var(--color-forest)' : '#333',
+                                    padding: '2px 8px',
+                                    borderRadius: '5px',
+                                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                                    pointerEvents: 'none', 
+                                    whiteSpace: 'nowrap',
+                                    fontWeight: 'bold',
+                                    border: isSelected ? '2px solid var(--color-forest)' : '1px solid #ccc'
+                                }}>
+                                    {lot.id}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* MODAL DO MAPA EXPANDIDO */}
+                {isExpanded && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                        background: 'rgba(0,0,0,0.9)', zIndex: 20000,
+                        display: 'flex', flexDirection: 'column', padding: '20px'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                            <h3 style={{ color: 'white', margin: 0 }}>Planta Técnica - Explore as dimensões</h3>
+                            <button 
+                                onClick={() => setIsExpanded(false)}
+                                style={{ background: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>
+                                <i className="fas fa-times"></i> Fechar e Ver Memorial
+                            </button>
+                        </div>
+                        
+                        <div style={{ flex: 1, position: 'relative', background: '#fff', borderRadius: '15px', overflow: 'hidden' }}>
+                            <div style={{
+                                position: 'absolute', inset: 0,
+                                backgroundImage: `url(${localStorage.getItem('mapa_customizado') || mapaPlanta})`, 
+                                backgroundSize: '100% 100%',
+                            }}></div>
+                            
+                            {mappedLots.map((lot, idx) => {
+                                const allLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
+                                const official = allLots.find(l => l.id === lot.id);
+                                const isSelected = selectedLot?.id === lot.id;
+                                const isVendido = official?.status === 'Vendido';
+
+                                return (
+                                    <div 
+                                        key={`exp-${idx}`} 
+                                        onClick={() => {
+                                            handleLotClick(lot);
+                                            setIsExpanded(false); // Fecha ao escolher
+                                        }}
+                                        style={{
+                                            position: 'absolute',
+                                            left: `${lot.left}%`,
+                                            top: `${lot.top}%`,
+                                            width: `${lot.width}%`,
+                                            height: `${lot.height}%`,
+                                            backgroundColor: isVendido ? 'rgba(0,0,0,0.5)' : (isSelected ? 'rgba(46, 125, 50, 0.7)' : 'rgba(76, 175, 80, 0.3)'),
+                                            border: isSelected ? '4px solid white' : '1px solid rgba(255,255,255,0.3)',
+                                            cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                        }}
+                                    >
+                                        <span style={{ 
+                                            background: '#fff', color: '#000', padding: '5px 12px', borderRadius: '20px', 
+                                            fontWeight: 'bold', fontSize: '1rem', boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
+                                        }}>
+                                            {lot.id}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Direita: Detalhes do Lote */}
+                <div className="lot-details" style={{ padding: '20px', background: '#f9f7f2', borderRadius: '10px' }}>
+                    {!selectedLot ? (
+                        <div style={{ textAlign: 'center', color: '#999', marginTop: '100px' }}>
+                            <i className="fas fa-hand-pointer" style={{ fontSize: '3rem', marginBottom: '20px' }}></i>
+                            <p>Clique nas áreas mapeadas para ver o descritivo e iniciar a Proposta.</p>
+                        </div>
+                    ) : (
+                        <div style={{ animation: 'fadeIn 0.5s' }}>
+                            <span style={{ 
+                                fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: '700',
+                                color: selectedLot.status === 'Vendido' ? '#999' : selectedLot.type === 'premium' ? 'var(--color-river)' : 'var(--color-sand)'
+                            }}>
+                                {selectedLot.status} • {selectedLot.type === 'premium' ? 'Planta Especial' : 'Padrão'}
+                            </span>
+                            
+                            <h3 style={{ fontSize: '2.5rem', marginTop: '10px', color: 'var(--color-forest)', fontFamily: "'Playfair Display', serif" }}>
+                                {selectedLot.name}
+                            </h3>
+                            <p style={{ color: '#666', fontSize: '1.2rem', fontWeight: 'bold' }}>Área: {selectedLot.size}</p>
+                            
+                            <hr style={{ border: 0, borderTop: '1px solid #ddd', margin: '20px 0' }} />
+                            
+                            <p style={{ color: '#666' }}>Valor à vista da Tabela Oficial</p>
+                            <div style={{ fontSize: '2.2rem', color: 'var(--color-forest)', fontWeight: '700', fontFamily: "'Playfair Display'" }}>
+                                {selectedLot.status === 'Vendido' ? 'Indisponível' : selectedLot.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </div>
+                            
+                            <div style={{ background: 'white', padding: '15px', borderRadius: '8px', marginTop: '20px', borderLeft: '4px solid var(--color-sand)' }}>
+                                <p style={{ fontSize: '0.9rem', color: '#555' }}>
+                                    <i className="fas fa-info-circle"></i> {selectedLot.desc}
+                                </p>
+                            </div>
+
+                            {selectedLot.status !== 'Vendido' ? (
+                                <>
+                                    <button onClick={scrollToProposta} className="btn btn-primary" style={{ width: '100%', padding: '15px', borderRadius: '5px', background: 'var(--color-forest)', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer', marginTop: '20px' }}>Gerar Proposta e Contrato Agora <i className="fas fa-arrow-right"></i></button>
+                                </>
+                            ) : (
+                                <div style={{ background: '#eee', padding: '15px', borderRadius: '8px', textAlign: 'center', color: '#666', marginTop: '20px', fontWeight: 'bold' }}>
+                                    Este lote já foi comercializado.
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+export default MapSection;

@@ -1,0 +1,322 @@
+/* --- VARIÁVEIS E RESET (DESIGN SYSTEM) --- */
+:root {
+    --color-forest: #2E4A3D; /* Verde Musgo - Autoridade/Natureza */
+    --color-river: #6B9AC4;  /* Azul Sereno - Rio/Tranquilidade */
+    --color-sand: #D9B48F;   /* Terracota Suave - Sofisticação/Terra */
+    --color-light: #F9F7F2;  /* Off-white - Fundo clean */
+    --color-dark: #1A1A1A;   /* Texto */
+    --radius-soft: 8px;
+    --radius-pill: 50px;
+    --shadow: 0 10px 30px rgba(0,0,0,0.08);
+    --transition: all 0.3s ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Lato', sans-serif;
+    background-color: var(--color-light);
+    color: var(--color-dark);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Playfair Display', serif;
+    color: var(--color-forest);
+}
+
+a { text-decoration: none; color: inherit; transition: var(--transition); }
+ul { list-style: none; }
+
+/* --- UI ELEMENTS --- */
+.btn {
+    display: inline-block;
+    padding: 14px 32px;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background-color: var(--color-sand);
+    color: var(--color-forest);
+}
+.btn-primary:hover { transform: translateY(-3px); box-shadow: var(--shadow); filter: brightness(1.05); }
+
+.btn-secondary {
+    background-color: transparent;
+    border: 2px solid var(--color-sand);
+    color: var(--color-sand);
+}
+.btn-secondary:hover { background-color: var(--color-sand); color: var(--color-forest); }
+
+.section-title {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+.section-subtitle {
+    text-align: center;
+    color: #666;
+    max-width: 600px;
+    margin: 0 auto 3rem auto;
+}
+
+/* Curvas Sinuosas (Visual do Rio) */
+.wave-divider {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    line-height: 0;
+    transform: rotate(180deg);
+}
+.wave-divider svg {
+    position: relative;
+    display: block;
+    width: calc(100% + 1.3px);
+    height: 100px;
+}
+.wave-divider .shape-fill { fill: var(--color-light); }
+
+/* --- HEADER --- */
+header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    padding: 20px 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+    background: rgba(46, 74, 61, 0.95); /* Verde Transparente */
+    backdrop-filter: blur(10px);
+    color: white;
+}
+
+.logo { font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; font-family: 'Playfair Display', serif; }
+
+nav ul { display: flex; gap: 30px; }
+nav a { font-size: 0.9rem; opacity: 0.9; }
+nav a:hover { opacity: 1; color: var(--color-sand); }
+
+.login-btn {
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 8px 20px;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: white;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.login-btn:hover { background: white; color: var(--color-forest); }
+
+/* --- HERO SECTION --- */
+.hero {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5)), url('/hero_river.png'); /* Usa a imagem gerada no public */
+    background-size: cover;
+    background-position: center;
+    color: white;
+    padding: 0 20px;
+}
+
+.hero-content h1 {
+    font-size: 3.5rem;
+    margin-bottom: 20px;
+    color: white;
+    line-height: 1.1;
+}
+.hero-content p {
+    font-size: 1.2rem;
+    margin-bottom: 40px;
+    opacity: 0.9;
+}
+
+/* --- MAPA INTERATIVO --- */
+.map-section { padding: 80px 5%; position: relative; }
+
+.map-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 40px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    padding: 20px;
+}
+
+.interactive-map {
+    background-color: #e8f5e9;
+    border-radius: 15px;
+    height: 500px;
+    position: relative;
+    overflow: hidden;
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%236b9ac4' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+
+.river-path {
+    position: absolute;
+    top: 20%;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    background: var(--color-river);
+    opacity: 0.8;
+    transform: skewY(-5deg);
+}
+
+.lot {
+    width: 40px;
+    height: 40px;
+    background: rgba(46, 74, 61, 0.2);
+    border: 2px solid var(--color-forest);
+    position: absolute;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: var(--color-forest);
+}
+.lot:hover { transform: scale(1.2); z-index: 10; background: var(--color-forest); color: white; }
+
+.lot.sold { background: #ccc; border-color: #999; cursor: not-allowed; }
+.lot.reserved { background: #FFD700; border-color: #F9A825; }
+.lot.premium { border-color: var(--color-river); background: rgba(107, 154, 196, 0.3); }
+
+.lot-details {
+    padding: 20px;
+    background: var(--color-light);
+    border-radius: 10px;
+}
+
+.lot-tag { font-size: 0.8rem; text-transform: uppercase; color: var(--color-sand); font-weight: 700; }
+.lot-price { font-size: 2rem; color: var(--color-forest); font-weight: 700; margin: 10px 0; font-family: 'Playfair Display'; }
+
+/* --- SIMULADOR --- */
+.simulator-section {
+    background: var(--color-forest);
+    color: white;
+    padding: 80px 5%;
+}
+
+.sim-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    align-items: center;
+}
+
+.range-group { margin-bottom: 25px; }
+.range-group label { display: block; margin-bottom: 10px; font-weight: 700; }
+
+input[type=range] {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 5px;
+    outline: none;
+    -webkit-appearance: none;
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--color-sand);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.result-box {
+    background: rgba(255,255,255,0.1);
+    padding: 30px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.2);
+    text-align: center;
+}
+.result-value { font-size: 3rem; font-family: 'Playfair Display'; color: var(--color-sand); }
+.disclaimer { font-size: 0.8rem; opacity: 0.7; margin-top: 10px; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+@media print {
+    /* Esconder redundâncias da Landing Page */
+    header, footer, .hero, .about-section, .map-section, .gallery-section, .wave-divider, 
+    .simulator-section > .container, #mapa, #contato, section:not(.simulator-section) {
+        display: none !important;
+    }
+    
+    /* Redefinir para permitir múltiplas páginas por padrão (Contratos) */
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* LOGICA DE TRAVA: Se o simulador estiver aberto, travamos em UMA PÁGINA */
+    body:has(.simulator-overlay) {
+        height: 100vh !important;
+        overflow: hidden !important;
+    }
+
+    /* O overlay do simulador deve ser a única coisa visível e travada em 1 página */
+    .simulator-overlay {
+        background: white !important;
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+        display: block !important;
+        z-index: 99999 !important;
+    }
+
+    /* O botão de fechar e controles do topo do overlay */
+    .no-print {
+        display: none !important;
+    }
+
+    /* Documento principal */
+    .printable-document {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 40px !important; /* Ajuste fino de margem interna */
+        box-shadow: none !important;
+        visibility: visible !important;
+        display: block !important;
+    }
+
+    /* Reset de cores para impressão */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    @page {
+        margin: 0;
+        size: auto;
+    }
+}
