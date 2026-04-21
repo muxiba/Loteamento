@@ -37,6 +37,7 @@ export const createPendingUser = async (userData) => {
         password: userData.password,
         status: 'pending',
         simulation: userData.simulation,
+        profile: userData.profile,
         lote_id: userData.loteId,
         total_parcelas: userData.totalParcelas,
         start_date: userData.startDate

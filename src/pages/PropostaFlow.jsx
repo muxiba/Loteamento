@@ -104,6 +104,7 @@ const PropostaFlow = () => {
         const totalPagoGeral = entry + totalPagoParcelas;
         
         setSimResult({
+            entrada: entry,
             saldo,
             parcelaInicial,
             parcelaFinalEstimada,
@@ -388,6 +389,7 @@ const PropostaFlow = () => {
                     loteId: lotDetails?.id,
                     password: senha,
                     simulation: simResult,
+                    profile: formData, // Save EVERYTHING from the form
                     totalParcelas: months,
                     startDate: new Date().toISOString()
                 };

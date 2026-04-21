@@ -66,19 +66,103 @@ const AdminArea = () => {
         loadInitialData();
     }, []);
 
-    const savePixKey = async (key) => {
-        setPixKey(key);
-        await setConfig('pix_key', key);
+    // --- FUNÇÃO PARA GERAR O CONTRATO PDF JURÍDICO ---
+    const handleViewContract = (user) => {
+        const sim = user.simulation || {};
+        const profile = user.profile || {}; // Dados extras como RG, Endereço, etc.
+        const lotDetails = lots.find(l => l.id === (user.lote_id || user.loteId));
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html><head><title>Contrato - ${user.name}</title>
+            <style>
+                body{font-family:'Times New Roman', Times, serif; padding:50px; color:#000; line-height:1.6; text-align:justify;}
+                .contract-paper{max-width:850px; margin:0 auto; background:white;}
+                h1{font-size:18px; text-align:center; text-transform:uppercase; text-decoration:underline; margin-bottom:30px;}
+                .clause-title{font-weight:bold; margin-top:20px; display:block;}
+                .signatures{margin-top:60px; display:grid; grid-template-columns:1fr 1fr; gap:50px; text-align:center;}
+                .sig-line{border-top:1px solid #000; margin-top:40px; padding-top:5px;}
+            </style>
+            </head><body>
+                <div class="contract-paper">
+                    <h1>CONTRATO PARTICULAR DE PROMESSA DE COMPRA E VENDA DE IMÓVEL<br/>(ALIENAÇÃO FIDUCIÁRIA)</h1>
+
+                    <p>
+                        Pelo presente instrumento particular, de um lado, na qualidade de <strong>PROMITENTE VENDEDORA</strong>, 
+                        <strong>IADATA LTDA (Nome Fantasia: IATEK ME)</strong>, inscrita no CNPJ sob o nº 44.921.307/0001-91, 
+                        Sociedade Empresária Limitada, com sede na Rua Conceição Cipriano Tavares, nº 30, Bairro Parque das Acácias, 
+                        Conselheiro Lafaiete – MG, CEP: 36.407-078, telefone: (16) 98121-1082, e-mail: veraguimaraessiqueira@hotmail.com, 
+                        e de outro lado, na qualidade de <strong>PROMISSÁRIO COMPRADOR</strong>:
+                    </p>
+
+                    <p>
+                        <strong>${user.name}</strong>, brasileiro(a), ${profile.estadoCivil || '---'}, ${profile.profissao || '---'}, 
+                        portador(a) da Cédula de Identidade RG nº ${profile.rg || '---'} e inscrito(a) no CPF/MF sob o nº <strong>${user.cpf}</strong>, 
+                        residente e domiciliado(a) na ${profile.logradouro || '---'}, nº ${profile.numero || 's/n'}, 
+                        Bairro ${profile.bairro || '---'}, Cidade de ${profile.cidade || '---'}/${profile.uf || '--'}, CEP ${profile.cep || '---'}.
+                    </p>
+
+                    <p>Têm entre si justo e contratado o presente instrumento particular, mediante as cláusulas e condições seguintes:</p>
+
+                    <span class="clause-title">Cláusula Primeira – Do Objeto</span>
+                    <p>
+                        A VENDEDORA é legítima proprietária e possuidora do imóvel denominado <strong>${user.lote_id || '---'}</strong>, 
+                        com área total de <strong>${lotDetails?.size || '---'}</strong>, devidamente aprovado pelos órgãos competentes. 
+                        A VENDEDORA promete vender e o COMPRADOR promete comprar o referido lote no estado em que se encontra.
+                    </p>
+
+                    <span class="clause-title">Cláusula Segunda – Do Preço e Condições de Pagamento</span>
+                    <p>
+                        O preço certo e ajustado para a presente Promessa de Compra e Venda é de 
+                        <strong>R$ ${Number(sim.totalPagoGeral || user.price || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>, 
+                        a serem pagos pelo COMPRADOR da seguinte forma:
+                    </p>
+                    <ul>
+                        <li><strong>Sinal/Entrada:</strong> R$ ${Number(sim.entrada || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}, pago na assinatura deste instrumento.</li>
+                        <li><strong>Saldo Restante:</strong> R$ ${Number((sim.totalPagoGeral || 0) - (sim.entrada || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2})}, pagos em ${user.total_parcelas || 120} parcelas mensais e sucessivas de R$ ${Number(sim.parcelaInicial || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})} sujeitas a correção monetária pré-fixada anual de ${(sim.taxa * 100) || 6}% ou índices oficiais previstos em lei.</li>
+                    </ul>
+
+                    <span class="clause-title">Cláusula Terceira – Correção e Inadimplência</span>
+                    <p>
+                        O não pagamento pontual de qualquer parcela implicará na incidência de juros moratórios de 1% (um por cento) ao mês e multa compensatória de 2% (dois por cento) sobre o valor do débito atualizado. O atraso superior a 90 dias configura quebra de contrato sob o regime da Lei 9.514/97.
+                    </p>
+
+                    <span class="clause-title">Cláusula Quinta – Do Foro</span>
+                    <p>
+                        Para dirimir quaisquer questões decorrentes deste contrato, as partes elegem o foro da Comarca de domicílio do Empreendimento, com renúncia expressa a qualquer outro.
+                    </p>
+
+                    <p style="margin-top:40px;">Cidade da Sede, ${new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'})}.</p>
+
+                    <div class="signatures">
+                        <div>
+                            <div class="sig-line">
+                                <strong>Empreendimentos Reserva do Rio LTDA</strong><br/>Promitente Vendedora
+                            </div>
+                        </div>
+                        <div>
+                            <div class="sig-line">
+                                <strong>${user.name}</strong><br/>CPF: ${user.cpf}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <script>window.print();</script>
+            </body></html>
+        `);
+        printWindow.document.close();
     };
 
 
     const approveUser = async (userId) => {
         try {
             const currentUser = pendingUsers.find(u => u.id === userId);
+            if (!currentUser) throw new Error("Usuário não encontrado na lista pendente.");
+
             await updateUserStatus(userId, 'approved');
             
             setPendingUsers(prev => prev.filter(u => u.id !== userId));
-            setApprovedUsers(prev => [...prev, { ...currentUser, status: 'approved', approvedAt: new Date().toISOString() }]);
+            setApprovedUsers(prev => [...prev, { ...currentUser, status: 'approved', approved_at: new Date().toISOString() }]);
 
             alert(`O acesso do cliente ${currentUser?.name || ''} foi liberado! Ele agora pode logar na Área do Cliente.`);
         } catch (err) {
@@ -655,85 +739,7 @@ const AdminArea = () => {
                                                 <td>{user.email || '-'}</td>
                                                 <td style={{ textAlign: 'right', paddingRight: '15px' }}>
                                                     <button 
-                                                        onClick={() => {
-                                                            const sim = user.simulation || {};
-                                                            // Buscar detalhes do lote na lista de lotes já carregada
-                                                            const lotDetails = lots.find(l => l.id === user.lote_id);
-                                                            
-                                                            const printWindow = window.open('', '_blank');
-                                                            printWindow.document.write(`
-                                                                <html><head><title>Contrato - ${user.name}</title>
-                                                                <style>
-                                                                    body{font-family:sans-serif; padding:50px; color:#333; line-height:1.5;}
-                                                                    .contract-paper{max-width:800px; margin:0 auto; border:1px solid #eee; padding:50px; box-shadow:0 0 10px rgba(0,0,0,0.05);}
-                                                                    .header{display:flex; justify-content:space-between; border-bottom:2px solid #2d5a27; padding-bottom:15px; margin-bottom:30px;}
-                                                                    h1{color:#2d5a27; font-size:22px; margin:0;}
-                                                                    h2{font-size:18px; text-align:center; margin:30px 0;}
-                                                                    .section-title{background:#f0f4f0; padding:5px 10px; font-weight:bold; margin:20px 0 10px 0; font-size:14px;}
-                                                                    .grid{display:grid; grid-template-columns:1fr 1fr; gap:15px; font-size:13px;}
-                                                                    .footer-sigs{display:grid; grid-template-columns:1fr 1fr; gap:50px; margin-top:80px; text-align:center; font-size:12px;}
-                                                                    hr{border:none; border-top:1px solid #000; margin-bottom:5px;}
-                                                                </style>
-                                                                </head><body>
-                                                                    <div class="contract-paper">
-                                                                        <div class="header">
-                                                                            <div><h1>RESERVA DO RIO</h1><small>Loteamento Premium</small></div>
-                                                                            <div style="text-align:right"><strong>INSTRUMENTO DE PROPOSTA</strong><br/>Data: ${new Date(user.created_at).toLocaleDateString('pt-BR')}</div>
-                                                                        </div>
-
-                                                                        <h2>QUADRO RESUMO E PROPOSTA DE AQUISIÇÃO</h2>
-
-                                                                        <div class="section-title">1. PROMITENTE VENDEDORA</div>
-                                                                        <div class="grid">
-                                                                            <div><strong>IADATA LTDA (IATEK ME)</strong></div>
-                                                                            <div>CNPJ: 44.921.307/0001-91</div>
-                                                                        </div>
-
-                                                                        <div class="section-title">2. COMPRADOR (PROMISSÁRIO)</div>
-                                                                        <div class="grid">
-                                                                            <div>Nome: <strong>${user.name}</strong></div>
-                                                                            <div>CPF: <strong>${user.cpf}</strong></div>
-                                                                            <div>E-mail: ${user.email}</div>
-                                                                            <div>Tel: ${user.telefone}</div>
-                                                                        </div>
-
-                                                                        <div class="section-title">3. OBJETO E VALORES</div>
-                                                                        <div class="grid">
-                                                                            <div>LOTE: <strong>${user.lote_id}</strong></div>
-                                                                            <div>ÁREA: ${lotDetails?.size || 'Consultar Planta'}</div>
-                                                                            <div>VALOR TOTAL (EST.): <strong>R$ ${Number(sim.totalGeral || user.price || lotDetails?.price || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong></div>
-                                                                            <div>PRAZO: ${user.total_parcelas || sim.parcelas} Meses</div>
-                                                                        </div>
-
-                                                                        <div class="section-title">4. CONDIÇÕES DE PAGAMENTO</div>
-                                                                        <div style="font-size:13px;">
-                                                                            <p>O comprador propõe o pagamento da seguinte forma:</p>
-                                                                            <ul>
-                                                                                <li><strong>Entrada:</strong> R$ ${Number(sim.entrada || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</li>
-                                                                                <li><strong>Financiamento:</strong> ${user.total_parcelas || sim.parcelas} parcelas mensais de R$ ${Number(sim.valorParcela || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</li>
-                                                                                <li><strong>Reajuste:</strong> Correção anual projetada de ${(sim.taxa * 100) || (simConfig.taxaAnual * 100)}% a.a.</li>
-                                                                            </ul>
-                                                                            <p style="font-size:11px; color:#666;">* Os valores acima são estimativas baseadas na simulação realizada em ${new Date(user.created_at).toLocaleString('pt-BR', {hour:'2-digit', minute:'2-digit'})}.</p>
-                                                                        </div>
-
-                                                                        <div class="footer-sigs">
-                                                                            <div>
-                                                                                <hr/>
-                                                                                <strong>Empreendimentos Reserva do Rio LTDA</strong><br/>Representante Legal
-                                                                            </div>
-                                                                            <div>
-                                                                                <hr/>
-                                                                                <strong>${user.name}</strong><br/>Comprador
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <p style="text-align:center; font-size:10px; margin-top:50px; color:#aaa;">Autenticado eletronicamente via Portal do Cliente Reserva do Rio</p>
-                                                                    </div>
-                                                                    <script>window.print();</script>
-                                                                </body></html>
-                                                            `);
-                                                            printWindow.document.close();
-                                                        }}
+                                                        onClick={() => handleViewContract(user)}
                                                         style={{ background: 'none', border: 'none', color: 'var(--color-river)', cursor: 'pointer', fontSize: '0.8rem', marginRight: '15px', fontWeight: 'bold' }}>
                                                         Ver Proposta
                                                     </button>
@@ -754,8 +760,6 @@ const AdminArea = () => {
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>
-                            </div>
                         )}
                         </div>
                     </div>
