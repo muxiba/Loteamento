@@ -712,7 +712,7 @@ const AdminArea = () => {
                                         const newItem = await addGalleryItem(uploaded);
                                         setGalleryItems(prev => [newItem, ...prev]);
                                     } catch (err) {
-                                        alert(`Erro ao subir arquivo ${file.name}. Verifique se o bucket 'gallery' foi criado.`);
+                                        alert(`Erro ao subir ${file.name}: ${err.message || "Erro desconhecido"}. Verifique o bucket 'gallery'.`);
                                         console.error(err);
                                     }
                                 }
