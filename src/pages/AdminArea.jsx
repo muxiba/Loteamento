@@ -657,6 +657,9 @@ const AdminArea = () => {
                                                     <button 
                                                         onClick={() => {
                                                             const sim = user.simulation || {};
+                                                            // Buscar detalhes do lote na lista de lotes já carregada
+                                                            const lotDetails = lots.find(l => l.id === user.lote_id);
+                                                            
                                                             const printWindow = window.open('', '_blank');
                                                             printWindow.document.write(`
                                                                 <html><head><title>Contrato - ${user.name}</title>
@@ -697,9 +700,9 @@ const AdminArea = () => {
                                                                         <div class="section-title">3. OBJETO E VALORES</div>
                                                                         <div class="grid">
                                                                             <div>LOTE: <strong>${user.lote_id}</strong></div>
-                                                                            <div>ÁREA: ${sim.area || 'Conforme Planta'}</div>
-                                                                            <div>VALOR TOTAL: <strong>R$ ${Number(sim.valorTotal || user.price || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong></div>
-                                                                            <div>PRAZO: ${user.total_parcelas} Meses</div>
+                                                                            <div>ÁREA: ${lotDetails?.size || 'Consultar Planta'}</div>
+                                                                            <div>VALOR TOTAL (EST.): <strong>R$ ${Number(sim.totalGeral || user.price || lotDetails?.price || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong></div>
+                                                                            <div>PRAZO: ${user.total_parcelas || sim.parcelas} Meses</div>
                                                                         </div>
 
                                                                         <div class="section-title">4. CONDIÇÕES DE PAGAMENTO</div>
@@ -707,10 +710,10 @@ const AdminArea = () => {
                                                                             <p>O comprador propõe o pagamento da seguinte forma:</p>
                                                                             <ul>
                                                                                 <li><strong>Entrada:</strong> R$ ${Number(sim.entrada || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</li>
-                                                                                <li><strong>Financiamento:</strong> ${user.total_parcelas} parcelas mensais de R$ ${Number(sim.primeiraParcela || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</li>
-                                                                                <li><strong>Reajuste:</strong> Correção anual projetada de 6% a.a.</li>
+                                                                                <li><strong>Financiamento:</strong> ${user.total_parcelas || sim.parcelas} parcelas mensais de R$ ${Number(sim.valorParcela || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</li>
+                                                                                <li><strong>Reajuste:</strong> Correção anual projetada de ${(sim.taxa * 100) || (simConfig.taxaAnual * 100)}% a.a.</li>
                                                                             </ul>
-                                                                            <p style="font-size:11px; color:#666;">* Os valores acima são estimativas baseadas na simulação realizada em ${new Date(user.created_at).toLocaleString('pt-BR')}.</p>
+                                                                            <p style="font-size:11px; color:#666;">* Os valores acima são estimativas baseadas na simulação realizada em ${new Date(user.created_at).toLocaleString('pt-BR', {hour:'2-digit', minute:'2-digit'})}.</p>
                                                                         </div>
 
                                                                         <div class="footer-sigs">
