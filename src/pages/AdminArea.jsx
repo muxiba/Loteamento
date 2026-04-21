@@ -242,14 +242,13 @@ const AdminArea = () => {
 
             <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 5%' }}>
 
-                {/* --- LOTE EDITOR (CRM INTERNO DAQUELE LOTE) --- */}
                 {editingLot && (
                     <div key={editingLot.id} style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)', animation: 'fadeIn 0.3s' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <button onClick={() => setEditingLotUid(null)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontWeight: 'bold' }}>
                                 <i className="fas fa-arrow-left"></i> Voltar para tabela
                             </button>
-                            <button className="btn btn-primary" onClick={() => { alert('Salvo!'); setEditingLotUid(null); }}>Salvar Lote {editingLot.id}</button>
+                            <button className="btn btn-primary" onClick={() => { setEditingLotUid(null); }}>Concluir Edição</button>
                         </div>
                         <h2>Dados Oficiais: <span style={{ color: 'var(--color-forest)' }}>{editingLot.id}</span></h2>
                         <hr style={{ margin: '20px 0', borderTop: 'none', borderBottom: '1px solid #eee' }} />
@@ -262,18 +261,17 @@ const AdminArea = () => {
                                 <input
                                     type="text"
                                     defaultValue={editingLot.id}
-                                    onBlur={e => {
+                                    onBlur={async (e) => {
                                         const newId = e.target.value;
                                         if (newId === editingLot.id || !newId) return;
-
-                                        // Busca pelo UID garante que alteramos APENAS esse objeto físico, 
-                                        // independente se o ID de texto for duplicado ou mudar.
-                                        const newLots = lots.map(l => l.uid === editingLot.uid ? { ...l, id: newId } : l);
-                                        setLots(newLots);
-
-                                        // Atualiza o vínculo no mapa também usando o novo ID de texto
-                                        const newMapped = drawnLots.map(d => d.id === editingLot.id ? { ...d, id: newId } : d);
-                                        setDrawnLots(newMapped);
+                                        try {
+                                            await editLot(editingLot.id, { id: newId });
+                                            const newMapped = drawnLots.map(d => d.id === editingLot.id ? { ...d, id: newId } : d);
+                                            setDrawnLots(newMapped);
+                                            alert("Identificação atualizada!");
+                                        } catch (err) {
+                                            alert("Erro ao mudar ID");
+                                        }
                                     }}
                                     style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc', fontWeight: 'bold', color: 'var(--color-river)' }}
                                 />
@@ -281,61 +279,70 @@ const AdminArea = () => {
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Status Operacional:</label>
                                 <select
                                     value={editingLot.status}
-                                    onChange={e => {
-                                        const newStatus = e.target.value;
-                                        const newLots = lots.map(l => l.uid === editingLot.uid ? { ...l, status: newStatus } : l);
-                                        setLots(newLots);
+                                    onChange={async (e) => {
+                                        try {
+                                            await editLot(editingLot.id, { status: e.target.value });
+                                            alert("Status atualizado!");
+                                        } catch (err) {
+                                            alert("Erro ao atualizar status");
+                                        }
                                     }}
                                     style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }}>
                                     <option value="Disponível">Disponível para Compra</option>
                                     <option value="Reservado">Reservado (Em análise)</option>
                                     <option value="Vendido">Vendido / Comprado</option>
                                 </select>
+
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Área (Metragem. Ex: 450.00):</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     defaultValue={parseFloat((editingLot.size || '0').replace(',', '.').replace(/[^\d.]/g, '')).toFixed(2)}
-                                    onChange={e => {
+                                    onBlur={async (e) => {
                                         const area = parseFloat(e.target.value);
-                                        const simConfig = JSON.parse(localStorage.getItem('db_sim_config') || '{"valorBaseM2": 250}');
                                         const valorM2 = simConfig.valorBaseM2 || 250;
-
-                                        const newLots = lots.map(l => l.id === editingLot.id ? {
-                                            ...l,
-                                            size: !isNaN(area) ? area.toFixed(2).replace('.', ',') + 'm²' : '',
-                                            price: !isNaN(area) ? area * valorM2 : l.price
-                                        } : l);
-                                        setLots(newLots);
-                                        localStorage.setItem('db_lots', JSON.stringify(newLots));
+                                        if (isNaN(area)) return;
+                                        try {
+                                            await editLot(editingLot.id, { 
+                                                size: area.toFixed(2).replace('.', ',') + 'm²',
+                                                price: area * valorM2
+                                            });
+                                            alert("Área e Preço recalculados!");
+                                        } catch (err) {
+                                            alert("Erro ao salvar área");
+                                        }
                                     }}
                                     style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }}
                                 />
 
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Preço Final de Venda (R$):</label>
-                                <div style={{ position: 'relative' }}>
-                                    <input
-                                        type="number"
-                                        value={editingLot.price}
-                                        onChange={e => {
-                                            const newLots = lots.map(l => l.id === editingLot.id ? { ...l, price: Number(e.target.value) } : l);
-                                            setLots(newLots);
-                                            localStorage.setItem('db_lots', JSON.stringify(newLots));
-                                        }}
-                                        style={{ width: '100%', padding: '10px', marginBottom: '5px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '1.1rem', fontWeight: 'bold' }}
-                                    />
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--color-forest)', fontWeight: 'bold', marginBottom: '15px' }}>
-                                        Valor Formatado: R$ {editingLot.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </div>
+                                <input
+                                    type="number"
+                                    defaultValue={editingLot.price}
+                                    onBlur={async (e) => {
+                                        try {
+                                            await editLot(editingLot.id, { price: Number(e.target.value) });
+                                            alert("Preço de venda atualizado!");
+                                        } catch (err) {
+                                            alert("Erro ao salvar preço");
+                                        }
+                                    }}
+                                    style={{ width: '100%', padding: '10px', marginBottom: '5px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '1.1rem', fontWeight: 'bold' }}
+                                />
+                                <div style={{ fontSize: '0.85rem', color: 'var(--color-forest)', fontWeight: 'bold', marginBottom: '15px' }}>
+                                    Valor Formatado: R$ {Number(editingLot.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </div>
-                                <small style={{ color: '#999', display: 'block', marginBottom: '15px' }}>* Mudar a Área aciona a multiplicação automática pela Tabela Base Mestre, mas você pode sobrescrever o valor livremente aqui.</small>
+                                <small style={{ color: '#999', display: 'block', marginBottom: '15px' }}>* Mudar a Área aciona a multiplicação automática, mas você pode sobrescrever o valor livremente aqui.</small>
 
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Descritivo Promocional (Site Público):</label>
                                 <textarea
                                     defaultValue={editingLot.desc}
-                                    onChange={e => {
-                                        const newLots = lots.map(l => l.id === editingLot.id ? { ...l, desc: e.target.value } : l);
-                                        setLots(newLots);
+                                    onBlur={async (e) => {
+                                        try {
+                                            await editLot(editingLot.id, { desc: e.target.value });
+                                        } catch (err) {
+                                            console.error(err);
+                                        }
                                     }}
                                     rows="3"
                                     placeholder="Ex: Lote plano, próximo à portaria..."
@@ -347,49 +354,65 @@ const AdminArea = () => {
                                 <h4 style={{ marginBottom: '10px' }}><i className="fas fa-user-lock"></i> Gestão do Comprador e Documentações</h4>
 
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>CPF do Comprador (Vincular ao Portal):</label>
-                                <input type="text" defaultValue={editingLot.clientCpf || ''} onChange={e => {
-                                    const newLots = lots.map(l => l.id === editingLot.id ? { ...l, clientCpf: e.target.value } : l);
-                                    setLots(newLots);
-                                }} style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }} placeholder="Ex: 123.456.789-00" />
+                                <input 
+                                    type="text" 
+                                    defaultValue={editingLot.clientCpf || ''} 
+                                    onBlur={async (e) => {
+                                        try {
+                                            await editLot(editingLot.id, { client_cpf: e.target.value });
+                                        } catch (err) {
+                                            alert("Erro ao salvar CPF");
+                                        }
+                                    }}
+                                    style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }} 
+                                />
 
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Nome do Cliente:</label>
-                                <input type="text" defaultValue={editingLot.client || ''} onChange={e => {
-                                    const newLots = lots.map(l => l.id === editingLot.id ? { ...l, client: e.target.value } : l);
-                                    setLots(newLots);
-                                }} style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }} />
+                                <input 
+                                    type="text" 
+                                    defaultValue={editingLot.client || ''} 
+                                    onBlur={async (e) => {
+                                        try {
+                                            await editLot(editingLot.id, { client: e.target.value });
+                                        } catch (err) {
+                                            alert("Erro ao salvar nome");
+                                        }
+                                    }}
+                                    style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }} 
+                                />
+
+                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Status de Pagamento (Visual):</label>
+                                <select 
+                                    value={editingLot.paymentStatus || '-'} 
+                                    onChange={async (e) => {
+                                        try {
+                                            await editLot(editingLot.id, { paymentStatus: e.target.value });
+                                        } catch (err) {
+                                            alert("Erro ao salvar status pagto");
+                                        }
+                                    }}
+                                    style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }}>
+                                    <option value="-">- Selecione -</option>
+                                    <option value="Em Dia">Em Dia</option>
+                                    <option value="Atrasado">Atrasado</option>
+                                    <option value="Aguardando Entrada">Aguardando Entrada / Docs</option>
+                                    <option value="Quitado">Totalmente Quitado</option>
+                                </select>
 
                                 <div style={{ background: '#f0f4f8', padding: '15px', borderRadius: '8px', border: '1px solid #dce4ec', marginTop: '20px' }}>
                                     <h4 style={{ fontSize: '0.9rem', color: 'var(--color-dark)', marginBottom: '15px' }}><i className="fas fa-folder-open"></i> Documentos da Administração</h4>
 
                                     <label style={{ display: 'block', fontSize: '0.8rem', color: '#666', marginBottom: '3px' }}>Contrato Oficial Assinado (PDF/Imagem):</label>
-                                    <input type="file" onChange={(e) => {
+                                    <input type="file" onChange={async (e) => {
                                         const file = e.target.files[0];
                                         if (!file) return;
-                                        const reader = new FileReader();
-                                        reader.onload = () => {
-                                            const adminDocs = editingLot.adminDocs || {};
-                                            adminDocs['contrato'] = { name: file.name, url: reader.result };
-                                            const newLots = lots.map(l => l.id === editingLot.id ? { ...l, adminDocs } : l);
-                                            try {
-                                                localStorage.setItem('db_lots', JSON.stringify(newLots));
-                                                setLots(newLots);
-                                                alert('Upload do Contrato concluído!');
-                                            } catch (err) {
-                                                adminDocs['contrato'].url = '#';
-                                                const fallback = lots.map(l => l.id === editingLot.id ? { ...l, adminDocs } : l);
-                                                localStorage.setItem('db_lots', JSON.stringify(fallback));
-                                                setLots(fallback);
-                                                alert('Arquivo grande. Referência do Contrato salva!');
-                                            }
-                                        };
-                                        reader.readAsDataURL(file);
+                                        alert("Upload de contrato em desenvolvimento com Storage Cloud...");
                                     }} style={{ width: '100%', fontSize: '0.8rem', marginBottom: '10px' }} />
 
                                     <label style={{ display: 'block', fontSize: '0.8rem', color: '#666', marginBottom: '3px' }}>Memorial Descritivo do Lote:</label>
                                     <input type="file" onChange={async (e) => {
                                         const file = e.target.files[0];
                                         if (!file) return;
-                                        // Simplified documentation handling for now - would usually upload to Supabase Storage
                                         alert('Funcionalidade de upload para nuvem sendo vinculada ao Storage...');
                                     }} style={{ width: '100%', fontSize: '0.8rem', marginBottom: '10px' }} />
 
