@@ -16,7 +16,7 @@ export const getUsers = async (status) => {
 export const updateUserStatus = async (userId, status) => {
     const { data, error } = await supabase
         .from('users')
-        .update({ status, approvedAt: status === 'approved' ? new Date().toISOString() : null })
+        .update({ status, approved_at: status === 'approved' ? new Date().toISOString() : null })
         .eq('id', userId)
         .select()
 
