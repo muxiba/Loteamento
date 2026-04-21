@@ -13,47 +13,137 @@ const ClientArea = () => {
     const [senha, setSenha] = useState('');
     const [activeTab, setActiveTab] = useState('financeiro');
     
+    const [userData, setUserData] = useState(null); // Guardar dados do usuário logado
     const [userLot, setUserLot] = useState(null);
     const [pixKey, setPixKey] = useState('carregando...');
+    const [lots, setLots] = useState([]);
 
     useEffect(() => {
-        const loadConfig = async () => {
-            const pk = await getConfig('pix_key');
-            setPixKey(pk || 'financeiro@reservadorio.com.br');
+        const loadLots = async () => {
+            const { data } = await supabase.from('lots').select('*');
+            if (data) setLots(data);
         };
-        loadConfig();
+        loadLots();
     }, []);
+
+    const handleViewContract = (user) => {
+        const sim = user.simulation || {};
+        const profile = user.profile || {};
+        const lotDetails = lots.find(l => l.id === (user.lote_id || user.loteId));
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html><head><title>Contrato - ${user.name}</title>
+            <style>
+                body{font-family:'Times New Roman', Times, serif; padding:50px; color:#000; line-height:1.6; text-align:justify;}
+                .contract-paper{max-width:850px; margin:0 auto; background:white;}
+                h1{font-size:18px; text-align:center; text-transform:uppercase; text-decoration:underline; margin-bottom:30px;}
+                .clause-title{font-weight:bold; margin-top:20px; display:block;}
+                .signatures{margin-top:60px; display:grid; grid-template-columns:1fr 1fr; gap:50px; text-align:center;}
+                .sig-line{border-top:1px solid #000; margin-top:40px; padding-top:5px;}
+            </style>
+            </head><body>
+                <div class="contract-paper">
+                    <h1>CONTRATO PARTICULAR DE PROMESSA DE COMPRA E VENDA DE IMÓVEL<br/>(ALIENAÇÃO FIDUCIÁRIA)</h1>
+
+                    <p>
+                        Pelo presente instrumento particular, de um lado, na qualidade de <strong>PROMITENTE VENDEDORA</strong>, 
+                        <strong>IADATA LTDA (Nome Fantasia: IATEK ME)</strong>, inscrita no CNPJ sob o nº 44.921.307/0001-91, 
+                        Sociedade Empresária Limitada, com sede na Rua Conceição Cipriano Tavares, nº 30, Bairro Parque das Acácias, 
+                        Conselheiro Lafaiete – MG, CEP: 36.407-078, telefone: (16) 98121-1082, e-mail: veraguimaraessiqueira@hotmail.com, 
+                        e de outro lado, na qualidade de <strong>PROMISSÁRIO COMPRADOR</strong>:
+                    </p>
+
+                    <p>
+                        <strong>${user.name}</strong>, brasileiro(a), ${profile.estadoCivil || '---'}, ${profile.profissao || '---'}, 
+                        portador(a) da Cédula de Identidade RG nº ${profile.rg || '---'} e inscrito(a) no CPF/MF sob o nº <strong>${user.cpf}</strong>, 
+                        residente e domiciliado(a) na ${profile.logradouro || '---'}, nº ${profile.numero || 's/n'}, 
+                        Bairro ${profile.bairro || '---'}, Cidade de ${profile.cidade || '---'}/${profile.uf || '--'}, CEP ${profile.cep || '---'}.
+                    </p>
+
+                    <p>Têm entre si justo e contratado o presente instrumento particular, mediante as cláusulas e condições seguintes:</p>
+
+                    <span class="clause-title">Cláusula Primeira – Do Objeto</span>
+                    <p>
+                        A VENDEDORA é legítima proprietária e possuidora do imóvel denominado <strong>${user.lote_id || '---'}</strong>, 
+                        com área total de <strong>${lotDetails?.size || '---'}</strong>, devidamente aprovado pelos órgãos competentes. 
+                        A VENDEDORA promete vender e o COMPRADOR promete comprar o referido lote no estado em que se encontra.
+                    </p>
+
+                    <span class="clause-title">Cláusula Segunda – Do Preço e Condições de Pagamento</span>
+                    <p>
+                        O preço certo e ajustado para a presente Promessa de Compra e Venda é de 
+                        <strong>R$ ${Number(sim.totalPagoGeral || user.price || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>, 
+                        a serem pagos pelo COMPRADOR da seguinte forma:
+                    </p>
+                    <ul>
+                        <li><strong>Sinal/Entrada:</strong> R$ ${Number(sim.entrada || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}, pago na assinatura deste instrumento.</li>
+                        <li><strong>Saldo Restante:</strong> R$ ${Number((sim.totalPagoGeral || 0) - (sim.entrada || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2})}, pagos em ${user.total_parcelas || 120} parcelas mensais e sucessivas de R$ ${Number(sim.parcelaInicial || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})} sujeitas a correção monetária pré-fixada anual de ${(sim.taxa * 100) || 6}% ou índices oficiais previstos em lei.</li>
+                    </ul>
+
+                    <span class="clause-title">Cláusula Terceira – Correção e Inadimplência</span>
+                    <p>
+                        O não pagamento pontual de qualquer parcela implicará na incidência de juros moratórios de 1% (um por cento) ao mês e multa compensatória de 2% (dois por cento) sobre o valor do débito atualizado. O atraso superior a 90 dias configura quebra de contrato sob o regime da Lei 9.514/97.
+                    </p>
+
+                    <span class="clause-title">Cláusula Quinta – Do Foro</span>
+                    <p>
+                        Para dirimir quaisquer questões decorrentes deste contrato, as partes elegem o foro da Comarca de domicílio do Empreendimento, com renúncia expressa a qualquer outro.
+                    </p>
+
+                    <p style="margin-top:40px;">Cidade da Sede, ${new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'})}.</p>
+
+                    <div class="signatures">
+                        <div>
+                            <div class="sig-line">
+                                <strong>Empreendimentos Reserva do Rio LTDA</strong><br/>Promitente Vendedora
+                            </div>
+                        </div>
+                        <div>
+                            <div class="sig-line">
+                                <strong>${user.name}</strong><br/>CPF: ${user.cpf}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <script>window.print();</script>
+            </body></html>
+        `);
+        printWindow.document.close();
+    };
 
     const handleLogin = async () => {
         try {
-            const { data: userData, error: userError } = await supabase
+            const { data: dbUser, error: userError } = await supabase
                 .from('users')
                 .select('*')
                 .eq('cpf', cpf)
                 .eq('password', senha)
                 .single();
 
-            if (userError || !userData) {
+            if (userError || !dbUser) {
                 alert('Acesso Negado. Verifique seu CPF e senha.');
                 return;
             }
 
-            if (userData.status === 'pending') {
+            if (dbUser.status === 'pending') {
                 setAwaitingApproval(true);
                 return;
             }
+
+            setUserData(dbUser);
 
             // Aprovado, buscar lote
             const { data: lotData, error: lotError } = await supabase
                 .from('lots')
                 .select('*')
-                .eq('id', userData.lote_id)
+                .eq('id', dbUser.lote_id)
                 .single();
 
             if (lotData) {
                 setUserLot(lotData);
             } else {
-                setUserLot({ id: userData.lote_id || 'Pendente', client: userData.name, payments: [], status: 'Vendido' });
+                setUserLot({ id: dbUser.lote_id || 'Pendente', client: dbUser.name, payments: [], status: 'Vendido' });
             }
             
             setIsLoggedIn(true);
@@ -143,7 +233,14 @@ const ClientArea = () => {
             return (
                 <>
                     <div style={{ background: 'white', borderRadius: '15px', padding: '25px', marginBottom: '30px', boxShadow: 'var(--shadow)' }}>
-                        <h3 style={{ marginBottom: '20px', color: 'var(--color-dark)' }}><i className="fas fa-file-signature"></i> Resumo do Contrato: {userLot.id}</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h3 style={{ margin: 0, color: 'var(--color-dark)' }}><i className="fas fa-file-signature"></i> Resumo do Contrato: {userLot.id}</h3>
+                            <button 
+                                onClick={() => handleViewContract(userData)}
+                                style={{ background: 'var(--color-river)', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
+                                <i className="fas fa-file-pdf"></i> Ver Meu Contrato
+                            </button>
+                        </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', background: '#fcfcfc', padding: '20px', borderRadius: '10px', border: '1px solid #eee' }}>
                             <div>
                                 <small style={{ color: '#666' }}>Início do Contrato</small>

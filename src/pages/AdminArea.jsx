@@ -673,42 +673,7 @@ const AdminArea = () => {
                                                 </td>
                                                 <td style={{ padding: '15px 10px', textAlign: 'right' }}>
                                                     <button 
-                                                        onClick={() => {
-                                                            const printWindow = window.open('', '_blank');
-                                                            printWindow.document.write(`
-                                                                <html><head><title>Proposta - ${user.name}</title>
-                                                                <style>body{font-family:sans-serif; padding:40px; color:#333; line-height:1.6;} .doc{border:1px solid #ccc; padding:40px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);} h2{color:#2d5a27; border-bottom:2px solid #2d5a27; padding-bottom:10px;} .grid{display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;} .label{font-size:12px; color:#666; display:block;}</style>
-                                                                </head><body>
-                                                                    <div class="doc">
-                                                                        <div style="text-align:right; font-size:12px;">Data da Proposta: ${new Date(user.created_at).toLocaleDateString('pt-BR')}</div>
-                                                                        <h2>RESERVA DO RIO - PROPOSTA DE COMPRA</h2>
-                                                                        <div class="grid">
-                                                                            <div><span class="label">COMPRADOR:</span><strong>${user.name}</strong></div>
-                                                                            <div><span class="label">CPF:</span><strong>${user.cpf}</strong></div>
-                                                                        </div>
-                                                                        <div class="grid">
-                                                                            <div><span class="label">TELEFONE:</span><strong>${user.telefone}</strong></div>
-                                                                            <div><span class="label">E-MAIL:</span><strong>${user.email}</strong></div>
-                                                                        </div>
-                                                                        <hr/>
-                                                                        <div class="grid">
-                                                                            <div><span class="label">LOTE PRETENDIDO:</span><strong>${user.lote_id}</strong></div>
-                                                                            <div><span class="label">PRAZO PAGAMENTO:</span><strong>${user.total_parcelas} meses</strong></div>
-                                                                        </div>
-                                                                        <div style="background:#f9f9f9; padding:20px; border-radius:8px;">
-                                                                            <h4>VALORES DA PROPOSTA</h4>
-                                                                            <p>Entrada Informada: R$ ${user.simulation?.entrada?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '---'}</p>
-                                                                            <p>Parcela Inicial: R$ ${user.simulation?.primeiraParcela?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '---'}</p>
-                                                                            <p>Total do Investimento (Est.): R$ ${user.simulation?.totalGeral?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '---'}</p>
-                                                                        </div>
-                                                                        <br/><br/>
-                                                                        <p style="font-size:12px; color:#999; text-align:center;">Assinado Digitalmente por IP: Portal Reserva do Rio</p>
-                                                                    </div>
-                                                                    <script>window.print();</script>
-                                                                </body></html>
-                                                            `);
-                                                            printWindow.document.close();
-                                                        }}
+                                                        onClick={() => handleViewContract(user)}
                                                         style={{ background: '#f0f4f8', color: 'var(--color-river)', padding: '8px 12px', borderRadius: '5px', border: '1px solid var(--color-river)', fontWeight: 'bold', cursor: 'pointer', marginRight: '10px' }}
                                                     >
                                                         <i className="fas fa-file-pdf"></i> Ver Proposta
