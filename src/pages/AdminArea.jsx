@@ -7,6 +7,7 @@ import { useLots } from '../hooks/useLots';
 import { getUsers, updateUserStatus } from '../services/userService';
 import { getMappedLots, saveMappedLots, clearAllMappedLots, deleteMappedLot } from '../services/mapService';
 import { getConfig, setConfig } from '../services/configService';
+import { getGalleryItems, uploadGalleryFile, addGalleryItem, deleteGalleryItem } from '../services/galleryService';
 
 const AdminArea = () => {
     const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
@@ -54,17 +55,9 @@ const AdminArea = () => {
                 const mapped = await getMappedLots();
                 setDrawnLots(mapped);
 
-                // Gallery (IndexedDB for now, as it's large files usually)
-                const items = await loadGalleryDB();
-                if (items.length === 0) {
-                    const legacy = JSON.parse(localStorage.getItem('db_gallery') || '[]');
-                    if (legacy.length > 0) {
-                        saveGalleryDB(legacy);
-                        setGalleryItems(legacy);
-                    }
-                } else {
-                    setGalleryItems(items.sort((a, b) => b.id - a.id));
-                }
+                // Gallery
+                const items = await getGalleryItems();
+                setGalleryItems(items);
             } catch (err) {
                 console.error("Error loading initial data:", err);
             }
@@ -78,15 +71,6 @@ const AdminArea = () => {
         await setConfig('pix_key', key);
     };
 
-    const updateGallery = async (items) => {
-        try {
-            await saveGalleryDB(items);
-            setGalleryItems(items);
-        } catch (e) {
-            console.error("Erro ao salvar no IndexedDB:", e);
-            alert("Erro crítico ao salvar mídia. Certifique-se de que há espaço em disco.");
-        }
-    };
 
     const approveUser = async (userId) => {
         try {
@@ -714,32 +698,47 @@ const AdminArea = () => {
                     </div>
                 )}
 
-                {/* --- 4. GALERIA --- */}
                 {activeTab === 'galeria' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
-                        <h3>4. Gerenciamento de Galeria</h3>
-                        <div style={{ background: '#f5f5f5', padding: '20px', borderRadius: '10px', marginBottom: '30px' }}>
-                            <input type="file" multiple accept="image/*,video/mp4" onChange={(e) => {
+                        <h3>4. Gerenciamento de Galeria Cloud</h3>
+                        <p style={{ color: '#666', marginBottom: '20px' }}>Arraste ou selecione arquivos para subir para a Web. Imagens e vídeos aparecerão para todos os clientes.</p>
+                        
+                        <div style={{ background: '#f5f5f5', padding: '20px', borderRadius: '10px', marginBottom: '30px', border: '2px dashed #ccc', textAlign: 'center' }}>
+                            <input type="file" multiple accept="image/*,video/mp4" onChange={async (e) => {
                                 const files = Array.from(e.target.files);
-                                files.forEach(file => {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                        const type = file.type.includes('video') ? 'localVideo' : 'image';
-                                        const newItem = { type, url: reader.result, name: file.name, id: Date.now() + Math.random() };
-                                        updateGallery([newItem, ...galleryItems]);
-                                    };
-                                    reader.readAsDataURL(file);
-                                });
+                                for (const file of files) {
+                                    try {
+                                        const uploaded = await uploadGalleryFile(file);
+                                        const newItem = await addGalleryItem(uploaded);
+                                        setGalleryItems(prev => [newItem, ...prev]);
+                                    } catch (err) {
+                                        alert(`Erro ao subir arquivo ${file.name}. Verifique se o bucket 'gallery' foi criado.`);
+                                        console.error(err);
+                                    }
+                                }
                             }} />
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px' }}>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px' }}>
                             {galleryItems.map(item => (
-                                <div key={item.id} style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
-                                    <div style={{ height: '100px', background: '#000' }}>
+                                <div key={item.id} style={{ border: '1px solid #eee', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+                                    <div style={{ height: '120px', background: '#000' }}>
                                         {item.type === 'image' && <img src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                                         {item.type === 'localVideo' && <video src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />}
                                     </div>
-                                    <button onClick={() => updateGallery(galleryItems.filter(i => i.id !== item.id))} style={{ width: '100%', background: '#fee', color: 'red', border: 'none', padding: '5px', cursor: 'pointer' }}>Remover</button>
+                                    <div style={{ padding: '10px', display: 'flex', justifyContent: 'center' }}>
+                                        <button 
+                                            onClick={async () => {
+                                                if(confirm("Deseja remover esta mídia da nuvem?")) {
+                                                    await deleteGalleryItem(item.id, item.url);
+                                                    setGalleryItems(galleryItems.filter(i => i.id !== item.id));
+                                                }
+                                            }} 
+                                            style={{ background: '#fff', color: '#ff4d4f', border: '1px solid #ff4d4f', padding: '5px 15px', borderRadius: '5px', cursor: 'pointer', fontSize: '0.8rem' }}
+                                        >
+                                            Remover
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>

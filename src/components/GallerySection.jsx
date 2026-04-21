@@ -1,27 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { loadGalleryDB } from '../utils/db';
+import { getGalleryItems } from '../services/galleryService';
 
 const GallerySection = () => {
     const [mediaItems, setMediaItems] = useState([]);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadGallery = async () => {
-            const items = await loadGalleryDB();
-            if (items && items.length > 0) {
-                setMediaItems(items.sort((a,b) => b.id - a.id));
-            } else {
-                // Mock items if DB is empty
-                setMediaItems([
-                    { id: 1, type: 'image', url: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800' },
-                    { id: 2, type: 'image', url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800' },
-                    { id: 3, type: 'video', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }
-                ]);
+            try {
+                const items = await getGalleryItems();
+                if (items && items.length > 0) {
+                    setMediaItems(items);
+                } else {
+                    // Mock items if DB is empty
+                    setMediaItems([
+                        { id: 1, type: 'image', url: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800' },
+                        { id: 2, type: 'image', url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800' },
+                        { id: 3, type: 'video', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }
+                    ]);
+                }
+            } catch (err) {
+                console.error("Gallery load error:", err);
+            } finally {
+                setLoading(false);
             }
         };
 
         loadGallery();
-        window.addEventListener('storage', loadGallery);
     }, []);
 
     const renderMedia = (item, isModal = false) => {
