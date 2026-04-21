@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabaseClient'
 
 export const getMappedLots = async () => {
     const { data, error } = await supabase
-        .from('mapped_lots')
+        .from('map_mapped')
         .select('*')
 
     if (error) {
@@ -16,7 +16,7 @@ export const saveMappedLots = async (lots) => {
     // Usually we clear and re-insert or upsert.
     // For simplicity, let's assume we replace them or upsert by ID.
     const { error } = await supabase
-        .from('mapped_lots')
+        .from('map_mapped')
         .upsert(lots)
 
     if (error) {
@@ -27,7 +27,7 @@ export const saveMappedLots = async (lots) => {
 
 export const deleteMappedLot = async (lotId) => {
     const { error } = await supabase
-        .from('mapped_lots')
+        .from('map_mapped')
         .delete()
         .eq('id', lotId)
 
@@ -39,7 +39,7 @@ export const deleteMappedLot = async (lotId) => {
 
 export const clearAllMappedLots = async () => {
     const { error } = await supabase
-        .from('mapped_lots')
+        .from('map_mapped')
         .delete()
         .neq('id', 'void') // Delete all
 
