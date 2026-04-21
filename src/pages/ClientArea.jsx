@@ -47,13 +47,13 @@ const ClientArea = () => {
             const { data: lotData, error: lotError } = await supabase
                 .from('lots')
                 .select('*')
-                .eq('id', userData.loteId)
+                .eq('id', userData.lote_id)
                 .single();
 
             if (lotData) {
                 setUserLot(lotData);
             } else {
-                setUserLot({ id: userData.loteId || 'Pendente', client: userData.name, payments: [], status: 'Vendido' });
+                setUserLot({ id: userData.lote_id || 'Pendente', client: userData.name, payments: [], status: 'Vendido' });
             }
             
             setIsLoggedIn(true);
@@ -94,7 +94,7 @@ const ClientArea = () => {
 
     const renderContent = () => {
         if (activeTab === 'financeiro') {
-            const total = userLot.totalParcelas || 120;
+            const total = userLot.total_parcelas || userLot.totalParcelas || 120;
             const pagamentos = typeof userLot.payments !== 'undefined' ? userLot.payments : [];
             const pagas = pagamentos.filter(p => p && p.quitado).length;
             const percent = Math.round((pagas / total) * 100) || 0;

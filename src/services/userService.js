@@ -28,9 +28,23 @@ export const updateUserStatus = async (userId, status) => {
 }
 
 export const createPendingUser = async (userData) => {
+    // Map camelCase to snake_case to match SQL schema
+    const dbData = {
+        name: userData.name,
+        cpf: userData.cpf,
+        email: userData.email,
+        telefone: userData.telefone,
+        password: userData.password,
+        status: 'pending',
+        simulation: userData.simulation,
+        lote_id: userData.loteId,
+        total_parcelas: userData.totalParcelas,
+        start_date: userData.startDate
+    };
+
     const { data, error } = await supabase
         .from('users')
-        .insert([{ ...userData, status: 'pending' }])
+        .insert([dbData])
         .select()
 
     if (error) {
