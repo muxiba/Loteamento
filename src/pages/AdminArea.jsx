@@ -549,19 +549,82 @@ const AdminArea = () => {
                                 Nenhum cliente pendente de aprovação.
                             </div>
                         ) : (
-                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                                <tbody>
-                                    {pendingUsers.map(user => (
-                                        <tr key={user.id} style={{ borderBottom: '1px solid #eee' }}>
-                                            <td style={{ padding: '15px 10px', fontWeight: 'bold' }}>{user.name}<br /><small style={{ color: '#666' }}>{user.cpf}</small></td>
-                                            <td style={{ padding: '15px 10px', textAlign: 'right' }}>
-                                                <button onClick={() => approveUser(user.id)} style={{ background: 'var(--color-forest)', color: 'white', padding: '8px 15px', borderRadius: '5px', border: 'none', fontWeight: 'bold', cursor: 'pointer', marginRight: '10px' }}>Aprovar Acesso</button>
-                                                <button style={{ background: 'transparent', color: '#c62828', padding: '8px 15px', borderRadius: '5px', border: '1px solid #c62828', fontWeight: 'bold', cursor: 'pointer' }}>Recusar</button>
-                                            </td>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                    <thead>
+                                        <tr style={{ background: '#f5f5f5', color: '#666', fontSize: '0.8rem' }}>
+                                            <th style={{ padding: '10px' }}>Cliente</th>
+                                            <th style={{ padding: '10px' }}>Contatos</th>
+                                            <th style={{ padding: '10px' }}>Lote Intenção</th>
+                                            <th style={{ padding: '10px', textAlign: 'right' }}>Ações</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {pendingUsers.map(user => (
+                                            <tr key={user.id} style={{ borderBottom: '1px solid #eee' }}>
+                                                <td style={{ padding: '15px 10px' }}>
+                                                    <strong>{user.name}</strong><br />
+                                                    <small>{user.cpf}</small>
+                                                </td>
+                                                <td style={{ padding: '15px 10px', fontSize: '0.9rem' }}>
+                                                    <i className="fab fa-whatsapp" style={{ color: '#25D366' }}></i> {user.telefone || '-'}<br />
+                                                    <i className="far fa-envelope"></i> {user.email || '-'}
+                                                </td>
+                                                <td style={{ padding: '15px 10px' }}>
+                                                    <span style={{ background: 'var(--color-river)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                                        {user.lote_id || 'N/A'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '15px 10px', textAlign: 'right' }}>
+                                                    <button 
+                                                        onClick={() => {
+                                                            const printWindow = window.open('', '_blank');
+                                                            printWindow.document.write(`
+                                                                <html><head><title>Proposta - ${user.name}</title>
+                                                                <style>body{font-family:sans-serif; padding:40px; color:#333; line-height:1.6;} .doc{border:1px solid #ccc; padding:40px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);} h2{color:#2d5a27; border-bottom:2px solid #2d5a27; padding-bottom:10px;} .grid{display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;} .label{font-size:12px; color:#666; display:block;}</style>
+                                                                </head><body>
+                                                                    <div class="doc">
+                                                                        <div style="text-align:right; font-size:12px;">Data da Proposta: ${new Date(user.created_at).toLocaleDateString('pt-BR')}</div>
+                                                                        <h2>RESERVA DO RIO - PROPOSTA DE COMPRA</h2>
+                                                                        <div class="grid">
+                                                                            <div><span class="label">COMPRADOR:</span><strong>${user.name}</strong></div>
+                                                                            <div><span class="label">CPF:</span><strong>${user.cpf}</strong></div>
+                                                                        </div>
+                                                                        <div class="grid">
+                                                                            <div><span class="label">TELEFONE:</span><strong>${user.telefone}</strong></div>
+                                                                            <div><span class="label">E-MAIL:</span><strong>${user.email}</strong></div>
+                                                                        </div>
+                                                                        <hr/>
+                                                                        <div class="grid">
+                                                                            <div><span class="label">LOTE PRETENDIDO:</span><strong>${user.lote_id}</strong></div>
+                                                                            <div><span class="label">PRAZO PAGAMENTO:</span><strong>${user.total_parcelas} meses</strong></div>
+                                                                        </div>
+                                                                        <div style="background:#f9f9f9; padding:20px; border-radius:8px;">
+                                                                            <h4>VALORES DA PROPOSTA</h4>
+                                                                            <p>Entrada Informada: R$ ${user.simulation?.entrada?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '---'}</p>
+                                                                            <p>Parcela Inicial: R$ ${user.simulation?.primeiraParcela?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '---'}</p>
+                                                                            <p>Total do Investimento (Est.): R$ ${user.simulation?.totalGeral?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '---'}</p>
+                                                                        </div>
+                                                                        <br/><br/>
+                                                                        <p style="font-size:12px; color:#999; text-align:center;">Assinado Digitalmente por IP: Portal Reserva do Rio</p>
+                                                                    </div>
+                                                                    <script>window.print();</script>
+                                                                </body></html>
+                                                            `);
+                                                            printWindow.document.close();
+                                                        }}
+                                                        style={{ background: '#f0f4f8', color: 'var(--color-river)', padding: '8px 12px', borderRadius: '5px', border: '1px solid var(--color-river)', fontWeight: 'bold', cursor: 'pointer', marginRight: '10px' }}
+                                                    >
+                                                        <i className="fas fa-file-pdf"></i> Ver Proposta
+                                                    </button>
+                                                    <button onClick={() => approveUser(user.id)} style={{ background: 'var(--color-forest)', color: 'white', padding: '8px 15px', borderRadius: '5px', border: 'none', fontWeight: 'bold', cursor: 'pointer', marginRight: '10px' }}>Aprovar Acesso</button>
+                                                    <button style={{ background: 'transparent', color: '#c62828', padding: '8px 15px', borderRadius: '5px', border: '1px solid #c62828', fontWeight: 'bold', cursor: 'pointer' }}>Recusar</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
 
                         <div style={{ marginTop: '50px', borderTop: '2px solid #eee', paddingTop: '30px' }}>
@@ -571,22 +634,23 @@ const AdminArea = () => {
                             {approvedUsers.length === 0 ? (
                                 <p style={{ color: '#999', textAlign: 'center' }}>Nenhum acesso liberado ainda.</p>
                             ) : (
-                                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: '#fcfcfc', borderRadius: '10px' }}>
-                                    <thead>
-                                        <tr style={{ borderBottom: '2px solid #ddd', color: '#333' }}>
-                                            <th style={{ padding: '15px' }}>Nome / Lote</th>
-                                            <th>CPF (Login)</th>
-                                            <th>E-mail</th>
-                                            <th style={{ textAlign: 'right', paddingRight: '15px' }}>Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {approvedUsers.map(user => (
-                                            <tr key={user.id} style={{ borderBottom: '1px solid #eee' }}>
-                                                <td style={{ padding: '15px' }}>
-                                                    <strong>{user.name}</strong><br />
-                                                    <small style={{ color: 'var(--color-river)' }}>{user.loteId || 'Cadastro Site'}</small>
-                                                </td>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: '#fcfcfc', borderRadius: '10px' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '2px solid #ddd', color: '#333' }}>
+                                                <th style={{ padding: '15px' }}>Nome / Lote</th>
+                                                <th>CPF (Login)</th>
+                                                <th>E-mail</th>
+                                                <th style={{ textAlign: 'right', paddingRight: '15px' }}>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {approvedUsers.map(user => (
+                                                <tr key={user.id} style={{ borderBottom: '1px solid #eee' }}>
+                                                    <td style={{ padding: '15px' }}>
+                                                        <strong>{user.name}</strong><br />
+                                                        <small style={{ color: 'var(--color-river)' }}>{user.lote_id || 'Cadastro Site'}</small>
+                                                    </td>
                                                 <td style={{ fontWeight: 'bold' }}>{user.cpf}</td>
                                                 <td>{user.email || '-'}</td>
                                                 <td style={{ textAlign: 'right', paddingRight: '15px' }}>
