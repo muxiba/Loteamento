@@ -82,7 +82,7 @@ const AdminArea = () => {
 
             alert(`O acesso do cliente ${currentUser?.name || ''} foi liberado! Ele agora pode logar na Área do Cliente.`);
         } catch (err) {
-            alert("Erro ao aprovar usuário");
+            alert(`Erro ao aprovar usuário: ${err.message || "Erro desconhecido"}`);
         }
     };
 
