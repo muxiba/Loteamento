@@ -4,7 +4,7 @@ import { loadGalleryDB, saveGalleryDB } from '../utils/db';
 import mapaPlanta from '../assets/planta.jpg';
 import { defaultCopy } from '../components/About';
 import { useLots } from '../hooks/useLots';
-import { getUsers, updateUserStatus } from '../services/userService';
+import { getUsers, updateUserStatus, deleteUser } from '../services/userService';
 import { getMappedLots, saveMappedLots, clearAllMappedLots, deleteMappedLot } from '../services/mapService';
 import { getConfig, setConfig } from '../services/configService';
 import { getGalleryItems, uploadGalleryFile, addGalleryItem, deleteGalleryItem } from '../services/galleryService';
@@ -167,6 +167,18 @@ const AdminArea = () => {
             alert(`O acesso do cliente ${currentUser?.name || ''} foi liberado! Ele agora pode logar na Área do Cliente.`);
         } catch (err) {
             alert(`Erro ao aprovar usuário: ${err.message || "Erro desconhecido"}`);
+        }
+    };
+
+    const handleRejectUser = async (userId) => {
+        if (!window.confirm("Você tem certeza que deseja RECUSAR e EXCLUIR este cadastro permanentemente?")) return;
+        
+        try {
+            await deleteUser(userId);
+            setPendingUsers(prev => prev.filter(u => u.id !== userId));
+            alert("Cadastro excluído com sucesso.");
+        } catch (err) {
+            alert("Erro ao excluir usuário: " + err.message);
         }
     };
 
@@ -702,7 +714,12 @@ const AdminArea = () => {
                                                         <i className="fas fa-file-pdf"></i> Ver Proposta
                                                     </button>
                                                     <button onClick={() => approveUser(user.id)} style={{ background: 'var(--color-forest)', color: 'white', padding: '8px 15px', borderRadius: '5px', border: 'none', fontWeight: 'bold', cursor: 'pointer', marginRight: '10px' }}>Aprovar Acesso</button>
-                                                    <button style={{ background: 'transparent', color: '#c62828', padding: '8px 15px', borderRadius: '5px', border: '1px solid #c62828', fontWeight: 'bold', cursor: 'pointer' }}>Recusar</button>
+                                                    <button 
+                                                        onClick={() => handleRejectUser(user.id)} 
+                                                        style={{ background: 'transparent', color: '#c62828', padding: '8px 15px', borderRadius: '5px', border: '1px solid #c62828', fontWeight: 'bold', cursor: 'pointer' }}
+                                                    >
+                                                        Recusar
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}

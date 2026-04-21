@@ -54,3 +54,15 @@ export const createPendingUser = async (userData) => {
     }
     return data[0]
 }
+
+export const deleteUser = async (userId) => {
+    const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId)
+
+    if (error) {
+        console.error("Error deleting user:", error)
+        throw error
+    }
+}
