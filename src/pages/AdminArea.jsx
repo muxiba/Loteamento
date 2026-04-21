@@ -24,9 +24,16 @@ const AdminArea = () => {
 
     // Sincronizar dados ao trocar de aba ou entrar em um lote
     useEffect(() => {
-        if (activeTab === 'finance' || activeTab === 'crm' || activeTab === 'approvals' || editingLotUid) {
-            reloadLots();
-        }
+        const refreshAll = async () => {
+            if (activeTab === 'finance' || activeTab === 'crm' || activeTab === 'approvals' || editingLotUid) {
+                await reloadLots();
+                const pending = await getUsers('pending');
+                setPendingUsers(pending);
+                const approved = await getUsers('approved');
+                setApprovedUsers(approved);
+            }
+        };
+        refreshAll();
     }, [activeTab, editingLotUid, financeSubView]);
     const [simConfig, setSimConfig] = useState({ taxaAnual: 0.06, entradaMinima: 8500, descontoAvista: 10, maxParcelas: 100, valorBaseM2: 250 });
 
@@ -35,6 +42,7 @@ const AdminArea = () => {
     const [approvedUsers, setApprovedUsers] = useState([]);
     const [drawnLots, setDrawnLots] = useState([]);
     const [mapImageUrl, setMapImageUrl] = useState(mapaPlanta);
+    const [brokers, setBrokers] = useState([]);
 
     useEffect(() => {
         const loadInitialData = async () => {
@@ -62,6 +70,10 @@ const AdminArea = () => {
                 // Gallery
                 const items = await getGalleryItems();
                 setGalleryItems(items);
+
+                // Brokers
+                const savedBrokers = await getConfig('brokers_list');
+                if (savedBrokers) setBrokers(savedBrokers);
             } catch (err) {
                 console.error("Error loading initial data:", err);
             }
@@ -347,6 +359,9 @@ const AdminArea = () => {
                     </button>
                     <button onClick={() => { setActiveTab('boletos'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'boletos' ? 'var(--color-river)' : '#999', fontWeight: activeTab === 'boletos' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
                         8. Lançar Boletos
+                    </button>
+                    <button onClick={() => { setActiveTab('brokers'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'brokers' ? 'var(--color-sand)' : '#999', fontWeight: activeTab === 'brokers' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
+                        9. Corretores
                     </button>
                     <Link to="/" className="btn btn-secondary" style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white', padding: '8px 20px', fontSize: '0.8rem', marginLeft: '20px', textDecoration: 'none' }}><i className="fas fa-home"></i> TELA PRINCIPAL</Link>
                     <button onClick={() => setIsAdminLoggedIn(false)} className="btn btn-secondary" style={{ borderColor: 'red', color: 'red', padding: '8px 20px', fontSize: '0.8rem', marginLeft: '10px' }}>Sair</button>
@@ -1198,6 +1213,78 @@ const AdminArea = () => {
                     </div>
                 )}
 
+                {/* --- 9. EQUIPE DE CORRETORES --- */}
+                {activeTab === 'brokers' && (
+                    <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
+                        <h3>9. Equipe de Corretores Oficiais</h3>
+                        <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px' }}>Cadastre os corretores que atenderão os clientes do site. O primeiro da lista será o contato principal do WhatsApp.</p>
+                        
+                        <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '10px', marginBottom: '30px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '15px', alignItems: 'flex-end' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold' }}>Nome do Corretor</label>
+                                    <input id="broker_name" type="text" placeholder="Ex: João Silva" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold' }}>WhatsApp (Apenas Números)</label>
+                                    <input id="broker_phone" type="text" placeholder="Ex: 31988887777" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold' }}>CRECI (Opcional)</label>
+                                    <input id="broker_creci" type="text" placeholder="Ex: 12345" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        const name = document.getElementById('broker_name').value;
+                                        const phone = document.getElementById('broker_phone').value;
+                                        if(!name || !phone) return alert("Preencha Nome e Telefone");
+                                        const newBrokers = [...brokers, { id: Date.now(), name, phone }];
+                                        await setConfig('brokers_list', newBrokers);
+                                        setBrokers(newBrokers);
+                                        document.getElementById('broker_name').value = '';
+                                        document.getElementById('broker_phone').value = '';
+                                    }}
+                                    className="btn btn-primary"
+                                    style={{ padding: '10px 20px' }}
+                                >
+                                    Adicionar
+                                </button>
+                            </div>
+                        </div>
+
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
+                                    <th style={{ padding: '15px' }}>Corretor</th>
+                                    <th>WhatsApp</th>
+                                    <th style={{ textAlign: 'right' }}>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {brokers.map((b, idx) => (
+                                    <tr key={b.id} style={{ borderBottom: '1px solid #eee', background: idx === 0 ? '#f0f9f4' : 'transparent' }}>
+                                        <td style={{ padding: '15px' }}>
+                                            <strong>{b.name}</strong> {idx === 0 && <span style={{ color: 'var(--color-forest)', fontSize: '0.7rem' }}>(Principal do Site)</span>}
+                                        </td>
+                                        <td>{b.phone}</td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button 
+                                                onClick={async () => {
+                                                    const updated = brokers.filter(x => x.id !== b.id);
+                                                    await setConfig('brokers_list', updated);
+                                                    setBrokers(updated);
+                                                }}
+                                                style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }}
+                                            >
+                                                Remover
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );
