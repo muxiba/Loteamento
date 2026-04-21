@@ -184,16 +184,17 @@ const ClientArea = () => {
 
     const renderContent = () => {
         if (activeTab === 'financeiro') {
-            const total = userLot.total_parcelas || userLot.totalParcelas || 120;
+            const sim = userData?.simulation || {};
+            const total = userData?.total_parcelas || 120;
             const pagamentos = typeof userLot.payments !== 'undefined' ? userLot.payments : [];
             const pagas = pagamentos.filter(p => p && p.quitado).length;
             const percent = Math.round((pagas / total) * 100) || 0;
             
-            // Calculando valores baseados no contrato (simulados)
-            const valorTotal = userLot.price || 0;
-            const entrada = userLot.simulation?.entrada || (valorTotal * 0.1); // Assumindo 10% se não houver
+            const valorTotal = sim.totalPagoGeral || userLot.price || 0;
+            const entrada = sim.entrada || 0;
             const saldoDevedor = valorTotal - entrada;
-            const valorParcelaBase = (saldoDevedor / total) || 0;
+            const baseParcela = sim.parcelaInicial || 0;
+            const taxaAnual = sim.taxa || 0.06;
 
             const toggleQuitar = async (index) => {
                 const updatedPayments = [...pagamentos];
@@ -280,6 +281,9 @@ const ClientArea = () => {
                                 <tbody>
                                     {Array.from({ length: total }).map((_, idx) => {
                                         const num = idx + 1;
+                                        const ano = Math.floor(idx / 12);
+                                        const valorReajustado = baseParcela * Math.pow(1 + taxaAnual, ano);
+                                        
                                         const paymentData = pagamentos[idx] || {};
                                         const isQuitado = paymentData.quitado || false;
                                         return (
@@ -288,7 +292,7 @@ const ClientArea = () => {
                                                     <strong>{num.toString().padStart(2, '0')}/{total}</strong>
                                                 </td>
                                                 <td style={{ padding: '15px', fontWeight: 'bold' }}>
-                                                    {valorParcelaBase.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                    {valorReajustado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                                 </td>
                                                 <td style={{ padding: '15px' }}>
                                                     {paymentData.boletoUrl ? (
@@ -368,27 +372,27 @@ const ClientArea = () => {
             const handleClientUpload = (e) => {
                 const file = e.target.files[0];
                 if(!file) return;
+                const fileName = prompt("Qual o nome deste documento? (Ex: RG de Fulano)", file.name);
+                if(!fileName) return;
+
                 const reader = new FileReader();
-                reader.onload = () => {
+                reader.onload = async () => {
                     const clientDocs = userLot.clientDocs || [];
-                    const newDoc = { name: file.name, url: reader.result };
-                    const updatedLot = { ...userLot, clientDocs: [...clientDocs, newDoc] };
+                    const newDoc = { name: fileName, url: reader.result };
+                    const updatedPayments = userLot.payments || [];
                     
                     try {
-                        const allLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
-                        const newLots = allLots.map(l => l.uid === userLot.uid ? updatedLot : l);
-                        localStorage.setItem('db_lots', JSON.stringify(newLots));
-                        setUserLot(updatedLot);
+                        const { data, error } = await supabase
+                            .from('lots')
+                            .update({ clientDocs: [...clientDocs, newDoc] })
+                            .eq('id', userLot.id)
+                            .select()
+                            .single();
+                        
+                        if (data) setUserLot(data);
                         alert('Upload de documento enviado à administração com sucesso!');
                     } catch(err) {
-                        // Fallback gracefully if database quota exceeded
-                        newDoc.url = '#';
-                        const fallbackLot = { ...userLot, clientDocs: [...clientDocs, newDoc] };
-                        const allLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
-                        const newLots = allLots.map(l => l.uid === userLot.uid ? fallbackLot : l);
-                        localStorage.setItem('db_lots', JSON.stringify(newLots));
-                        setUserLot(fallbackLot);
-                        alert('O arquivo excedeu a memória local segura, simulamos o envio da sua ID apenas em texto!');
+                        alert('Erro ao enviar documento.');
                     }
                 };
                 reader.readAsDataURL(file);

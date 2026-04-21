@@ -515,14 +515,26 @@ const AdminArea = () => {
                                     <input type="file" onChange={async (e) => {
                                         const file = e.target.files[0];
                                         if (!file) return;
-                                        alert("Upload de contrato em desenvolvimento com Storage Cloud...");
+                                        const reader = new FileReader();
+                                        reader.onload = async () => {
+                                            const adminDocs = editingLot.adminDocs || {};
+                                            await editLot(editingLot.id, { adminDocs: { ...adminDocs, contrato: { url: reader.result, name: file.name } } });
+                                            alert("Contrato oficial anexado ao portal do cliente!");
+                                        };
+                                        reader.readAsDataURL(file);
                                     }} style={{ width: '100%', fontSize: '0.8rem', marginBottom: '10px' }} />
 
                                     <label style={{ display: 'block', fontSize: '0.8rem', color: '#666', marginBottom: '3px' }}>Memorial Descritivo do Lote:</label>
                                     <input type="file" onChange={async (e) => {
                                         const file = e.target.files[0];
                                         if (!file) return;
-                                        alert('Funcionalidade de upload para nuvem sendo vinculada ao Storage...');
+                                        const reader = new FileReader();
+                                        reader.onload = async () => {
+                                            const adminDocs = editingLot.adminDocs || {};
+                                            await editLot(editingLot.id, { adminDocs: { ...adminDocs, memorial: { url: reader.result, name: file.name } } });
+                                            alert("Memorial descritivo enviado ao portal do cliente!");
+                                        };
+                                        reader.readAsDataURL(file);
                                     }} style={{ width: '100%', fontSize: '0.8rem', marginBottom: '10px' }} />
 
                                     <div style={{ marginTop: '20px', borderTop: '1px solid #ddd', paddingTop: '15px' }}>
@@ -1025,9 +1037,13 @@ const AdminArea = () => {
                                             const currentLot = lots.find(l => l.id === financeSubView) || {};
                                             const total = currentLot.totalParcelas || 120;
                                             const pagamentos = currentLot.payments || [];
+                                            const baseParcela = currentLot.simulation?.parcelaInicial || 0;
+                                            const taxaAnual = currentLot.simulation?.taxa || 0.06;
 
-                                            return Array.from({ length: 12 }).map((_, idx) => { // Showing first 12 for brevity
+                                            return Array.from({ length: total }).map((_, idx) => {
                                                 const num = idx + 1;
+                                                const ano = Math.floor(idx / 12);
+                                                const valorReajustado = baseParcela * Math.pow(1 + taxaAnual, ano);
                                                 const pData = pagamentos[idx] || {};
                                                 const isQuitado = pData.quitado || false;
 
@@ -1039,11 +1055,14 @@ const AdminArea = () => {
 
                                                 return (
                                                     <tr key={idx} style={{ borderBottom: '1px solid #eee', background: isQuitado ? '#f6fff8' : 'white' }}>
-                                                        <td style={{ padding: '15px' }}><strong>{num.toString().padStart(2, '0')}/{total}</strong></td>
+                                                        <td style={{ padding: '15px' }}>
+                                                            <strong>{num.toString().padStart(2, '0')}/{total}</strong>
+                                                            <div style={{fontSize:'0.7rem', color:'#999'}}>Valor: R$ {valorReajustado.toLocaleString('pt-BR', {minimumFractionDigits:2})}</div>
+                                                        </td>
                                                         <td style={{ padding: '15px' }}>
                                                             {pData.boletoUrl ? (
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                                    <span style={{ color: 'var(--color-forest)', fontWeight: 'bold' }}>Enviado</span>
+                                                                    <a href={pData.boletoUrl} download={pData.boletoName || `Boleto_${num}.pdf`} style={{ color: 'var(--color-river)', fontWeight: 'bold' }}>Visualizar</a>
                                                                     <button onClick={() => savePaymentUpdate({ boletoUrl: null, boletoName: null })} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer', fontSize: '0.7rem' }}>Excluir</button>
                                                                 </div>
                                                             ) : (
