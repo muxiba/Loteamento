@@ -159,12 +159,25 @@ const AdminArea = () => {
             const currentUser = pendingUsers.find(u => u.id === userId);
             if (!currentUser) throw new Error("Usuário não encontrado na lista pendente.");
 
+            // 1. Aprovar Status do Usuário
             await updateUserStatus(userId, 'approved');
             
+            // 2. Vincular dados ao Lote Oficial
+            if (currentUser.lote_id) {
+                await editLot(currentUser.lote_id, {
+                    status: 'Vendido',
+                    client: currentUser.name,
+                    clientPhone: currentUser.telefone,
+                    price: currentUser.simulation?.totalGeral || currentUser.price,
+                    totalParcelas: currentUser.total_parcelas || 120,
+                    simulation: currentUser.simulation // Guardar simulação no lote para o gráfico
+                });
+            }
+
             setPendingUsers(prev => prev.filter(u => u.id !== userId));
             setApprovedUsers(prev => [...prev, { ...currentUser, status: 'approved', approved_at: new Date().toISOString() }]);
 
-            alert(`O acesso do cliente ${currentUser?.name || ''} foi liberado! Ele agora pode logar na Área do Cliente.`);
+            alert(`O acesso do cliente ${currentUser?.name || ''} foi liberado e o Lote ${currentUser.lote_id} foi marcado como VENDIDO!`);
         } catch (err) {
             alert(`Erro ao aprovar usuário: ${err.message || "Erro desconhecido"}`);
         }
@@ -584,7 +597,10 @@ const AdminArea = () => {
                                     <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
                                         <td style={{ padding: '15px 10px', fontWeight: 'bold', color: 'var(--color-dark)' }}>{lot.id}</td>
                                         <td style={{ padding: '15px 10px' }}>{lot.status}</td>
-                                        <td style={{ padding: '15px 10px' }}>{lot.client}</td>
+                                        <td style={{ padding: '15px 10px' }}>
+                                            <strong>{lot.client || 'Livre'}</strong>
+                                            {lot.clientPhone && <><br/><small style={{color:'var(--color-forest)'}}><i className="fab fa-whatsapp"></i> {lot.clientPhone}</small></>}
+                                        </td>
                                         <td style={{ padding: '15px 10px' }}>R$ {Number(lot.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} <br /><small style={{ color: '#999' }}>{lot.size}</small></td>
                                         <td style={{ padding: '15px 10px', textAlign: 'right' }}>
                                             <button onClick={() => setEditingLotUid(lot.id)} style={{ border: '1px solid var(--color-river)', background: 'transparent', color: 'var(--color-river)', padding: '6px 12px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Editar / Financeiro</button>
@@ -986,7 +1002,14 @@ const AdminArea = () => {
                                     <i className="fas fa-arrow-left"></i> Voltar ao Dashboard Geral
                                 </button>
                                 <h3>Gerenciamento de Mensalidades - {lots.find(l => l.id === financeSubView)?.id}</h3>
-                                <p style={{ color: '#666', marginBottom: '20px' }}>Lote de <strong>{lots.find(l => l.id === financeSubView)?.client}</strong>.</p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                    <p style={{ color: '#666', margin: 0 }}>Lote de <strong>{lots.find(l => l.id === financeSubView)?.client}</strong>.</p>
+                                    {lots.find(l => l.id === financeSubView)?.clientPhone && (
+                                        <a href={`https://wa.me/55${lots.find(l => l.id === financeSubView)?.clientPhone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" style={{ background: '#25D366', color: 'white', textDecoration: 'none', padding: '8px 15px', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                                            <i className="fab fa-whatsapp"></i> Falar com Cliente
+                                        </a>
+                                    )}
+                                </div>
 
                                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                                     <thead>
@@ -1018,7 +1041,23 @@ const AdminArea = () => {
                                                     <tr key={idx} style={{ borderBottom: '1px solid #eee', background: isQuitado ? '#f6fff8' : 'white' }}>
                                                         <td style={{ padding: '15px' }}><strong>{num.toString().padStart(2, '0')}/{total}</strong></td>
                                                         <td style={{ padding: '15px' }}>
-                                                            {pData.boletoUrl ? <div style={{ color: 'var(--color-forest)' }}>Enviado</div> : <span style={{color:'#999'}}>Pendente</span>}
+                                                            {pData.boletoUrl ? (
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                    <span style={{ color: 'var(--color-forest)', fontWeight: 'bold' }}>Enviado</span>
+                                                                    <button onClick={() => savePaymentUpdate({ boletoUrl: null, boletoName: null })} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer', fontSize: '0.7rem' }}>Excluir</button>
+                                                                </div>
+                                                            ) : (
+                                                                <input type="file" accept=".pdf" onChange={(e) => {
+                                                                    const file = e.target.files[0];
+                                                                    if (!file) return;
+                                                                    const reader = new FileReader();
+                                                                    reader.onload = async () => {
+                                                                        await savePaymentUpdate({ boletoUrl: reader.result, boletoName: file.name });
+                                                                        alert(`Boleto da parcela ${num} disponível para o cliente!`);
+                                                                    };
+                                                                    reader.readAsDataURL(file);
+                                                                }} style={{ fontSize: '0.7rem', width: '150px' }} />
+                                                            )}
                                                         </td>
                                                         <td style={{ padding: '15px' }}>
                                                             {pData.comprovanteUrl ? <a href={pData.comprovanteUrl} target="_blank" rel="noreferrer">Ver</a> : <span style={{ color: '#999' }}>Aguardando</span>}
@@ -1086,6 +1125,7 @@ const AdminArea = () => {
                                                     <td style={{ padding: '15px 10px' }}>
                                                         <strong>{l.id}</strong><br />
                                                         <small style={{ color: '#666' }}>{l.client}</small>
+                                                        {l.clientPhone && <><br/><small style={{color:'var(--color-river)'}}><i className="fab fa-whatsapp"></i> {l.clientPhone}</small></>}
                                                     </td>
                                                     <td style={{ padding: '15px 10px' }}>{getPaymentBadge(l.paymentStatus)}</td>
                                                     <td style={{ padding: '15px 10px' }}>
