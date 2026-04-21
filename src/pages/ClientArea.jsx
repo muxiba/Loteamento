@@ -26,6 +26,21 @@ const ClientArea = () => {
         loadLots();
     }, []);
 
+    // Sincronizar dados do lote ao trocar de aba para ver novos boletos ou memoriais
+    useEffect(() => {
+        const refreshUserLot = async () => {
+            if (isLoggedIn && userData?.lote_id) {
+                const { data } = await supabase
+                    .from('lots')
+                    .select('*')
+                    .eq('id', userData.lote_id)
+                    .single();
+                if (data) setUserLot(data);
+            }
+        };
+        refreshUserLot();
+    }, [activeTab, isLoggedIn]);
+
     const handleViewContract = (user) => {
         const sim = user.simulation || {};
         const profile = user.profile || {};

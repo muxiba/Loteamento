@@ -21,8 +21,13 @@ const AdminArea = () => {
     const [financeSubView, setFinanceSubView] = useState(null);
 
     const { lots, loading: lotsLoading, error: lotsError, addLot, editLot, removeLot, reload: reloadLots } = useLots();
-    
-    const [pixKey, setPixKey] = useState('chave@pix.com');
+
+    // Sincronizar dados ao trocar de aba ou entrar em um lote
+    useEffect(() => {
+        if (activeTab === 'finance' || activeTab === 'crm' || activeTab === 'approvals' || editingLotUid) {
+            reloadLots();
+        }
+    }, [activeTab, editingLotUid, financeSubView]);
     const [simConfig, setSimConfig] = useState({ taxaAnual: 0.06, entradaMinima: 8500, descontoAvista: 10, maxParcelas: 100, valorBaseM2: 250 });
 
     const [galleryItems, setGalleryItems] = useState([]);
@@ -31,7 +36,6 @@ const AdminArea = () => {
     const [drawnLots, setDrawnLots] = useState([]);
     const [mapImageUrl, setMapImageUrl] = useState(mapaPlanta);
 
-    // Load Initial Data from Supabase
     useEffect(() => {
         const loadInitialData = async () => {
             try {
