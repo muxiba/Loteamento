@@ -672,8 +672,8 @@ const AdminArea = () => {
                                         ))}
                                     </tbody>
                                 </table>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
