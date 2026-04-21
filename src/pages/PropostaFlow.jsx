@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useLots } from '../hooks/useLots';
+import { getConfig } from '../services/configService';
+import { createPendingUser } from '../services/userService';
 
 const PropostaFlow = () => {
     const navigate = useNavigate();
     const location = useLocation();
     
-    // Obter o Lote pré-selecionado (se houver) via state do Router ou do LocalStorage
+    // Obter o Lote pré-selecionado (se houver) via state do Router
     const [selectedLotId, setSelectedLotId] = useState(location.state?.lotId || '');
     const [lotDetails, setLotDetails] = useState(null);
-    const [allLots, setAllLots] = useState([]);
+
+    const { lots: allLots, loading: lotsLoading } = useLots();
 
     // Step management
     const [step, setStep] = useState(1);
@@ -59,21 +63,22 @@ const PropostaFlow = () => {
     const [simResult, setSimResult] = useState(null);
 
     useEffect(() => {
-        // Carregar Predefinições do Admin
-        const savedInfo = localStorage.getItem('db_sim_config');
-        if (savedInfo) {
-            const parsedConfig = JSON.parse(savedInfo);
-            setConfig(parsedConfig);
-            setEntry(parsedConfig.entradaMinima);
-        }
+        const loadConfig = async () => {
+            const saved = await getConfig('sim_config');
+            if (saved) {
+                setConfig(saved);
+                setEntry(saved.entradaMinima);
+            }
+        };
+        loadConfig();
+    }, []);
 
-        const savedLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
-        setAllLots(savedLots);
-        if (selectedLotId) {
-            const l = savedLots.find(x => x.id === selectedLotId);
+    useEffect(() => {
+        if (selectedLotId && allLots.length > 0) {
+            const l = allLots.find(x => x.id === selectedLotId);
             setLotDetails(l);
         }
-    }, [selectedLotId]);
+    }, [selectedLotId, allLots]);
 
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -369,31 +374,31 @@ const PropostaFlow = () => {
     };
 
     const renderStepFinalizacao = () => {
-        const handleFinalSubmit = () => {
+        const handleFinalSubmit = async () => {
             if(senha !== confirmarSenha || senha.length < 4) {
                 return alert("As senhas não conferem ou são muito curtas!");
             }
 
-            const pendingUsers = JSON.parse(localStorage.getItem('pending_users') || '[]');
-            pendingUsers.push({
-                id: Date.now(),
-                name: formData.nome,
-                cpf: formData.cpf,
-                email: formData.email,
-                telefone: formData.telefone,
-                loteId: lotDetails?.id,
-                status: 'Aguardando Aprovação',
-                docsUploaded: true,
-                senha: senha,
-                simulation: simResult,
-                totalParcelas: months,
-                price: simResult?.totalSaldo || lotDetails?.price,
-                startDate: new Date().toLocaleDateString('pt-BR')
-            });
-            localStorage.setItem('pending_users', JSON.stringify(pendingUsers));
+            try {
+                const userData = {
+                    name: formData.nome,
+                    cpf: formData.cpf,
+                    email: formData.email,
+                    telefone: formData.telefone,
+                    loteId: lotDetails?.id,
+                    password: senha,
+                    simulation: simResult,
+                    totalParcelas: months,
+                    startDate: new Date().toISOString()
+                };
+                
+                await createPendingUser(userData);
 
-            alert('Proposta ENVIADA COM SUCESSO! Você receberá a confirmação em breve.');
-            navigate('/cliente');
+                alert('Proposta ENVIADA COM SUCESSO! Você receberá a confirmação em breve.');
+                navigate('/cliente');
+            } catch (err) {
+                alert("Erro ao enviar proposta. Verifique se o CPF já está cadastrado.");
+            }
         };
 
         return (

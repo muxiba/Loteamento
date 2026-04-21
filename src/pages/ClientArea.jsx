@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
+import { getConfig } from '../services/configService';
+import { updateLotPayments } from '../services/lotsService';
 
 const ClientArea = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -11,36 +14,52 @@ const ClientArea = () => {
     const [activeTab, setActiveTab] = useState('financeiro');
     
     const [userLot, setUserLot] = useState(null);
-    const [pixKey, setPixKey] = useState('chave@pix.com');
+    const [pixKey, setPixKey] = useState('carregando...');
 
     useEffect(() => {
-        setPixKey(localStorage.getItem('db_pix_key') || 'financeiro@reservadorio.com.br');
+        const loadConfig = async () => {
+            const pk = await getConfig('pix_key');
+            setPixKey(pk || 'financeiro@reservadorio.com.br');
+        };
+        loadConfig();
     }, []);
 
-    const handleLogin = () => {
-        const allApproved = JSON.parse(localStorage.getItem('db_approved_users') || '[]');
-        const allLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
-        
-        const approvedUser = allApproved.find(u => u.cpf === cpf);
-        
-        if (approvedUser) {
-            // Se encontrar o usuário aprovado, verificamos se ele tem um lote vinculado
-            const lot = allLots.find(l => l.clientCpf === cpf || l.client === approvedUser.name);
-            
-            if (lot) {
-                setUserLot(lot);
-            } else {
-                // Se não tiver lote vinculado no CRM ainda, criamos um objeto "vazio" para não dar erro na renderização
-                setUserLot({ id: 'Pendente Vínculo', client: approvedUser.name, boletos: [], status: 'Vendido' });
+    const handleLogin = async () => {
+        try {
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('cpf', cpf)
+                .eq('password', senha)
+                .single();
+
+            if (userError || !userData) {
+                alert('Acesso Negado. Verifique seu CPF e senha.');
+                return;
             }
+
+            if (userData.status === 'pending') {
+                setAwaitingApproval(true);
+                return;
+            }
+
+            // Aprovado, buscar lote
+            const { data: lotData, error: lotError } = await supabase
+                .from('lots')
+                .select('*')
+                .eq('id', userData.loteId)
+                .single();
+
+            if (lotData) {
+                setUserLot(lotData);
+            } else {
+                setUserLot({ id: userData.loteId || 'Pendente', client: userData.name, payments: [], status: 'Vendido' });
+            }
+            
             setIsLoggedIn(true);
-        } else if (cpf === '123') {
-            // Bypass para testes
-            const testLot = allLots.find(l => l.status === 'Vendido');
-            setUserLot(testLot || { id: 'Lote Teste', client: 'Teste', boletos: [] });
-            setIsLoggedIn(true);
-        } else {
-            alert('Acesso Negado. Seu CPF não consta na lista de acessos liberados ou o cadastro ainda não foi aprovado.');
+        } catch (err) {
+            console.error("Login error:", err);
+            alert("Erro ao tentar acessar o servidor.");
         }
     };
 
@@ -86,18 +105,17 @@ const ClientArea = () => {
             const saldoDevedor = valorTotal - entrada;
             const valorParcelaBase = (saldoDevedor / total) || 0;
 
-            const toggleQuitar = (index) => {
+            const toggleQuitar = async (index) => {
                 const updatedPayments = [...pagamentos];
                 if (!updatedPayments[index]) updatedPayments[index] = {};
                 updatedPayments[index].quitado = !updatedPayments[index].quitado;
                 
-                const updatedLot = { ...userLot, payments: updatedPayments };
-                setUserLot(updatedLot);
-                
-                // Salvar no provedor local para persistencia
-                const allLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
-                const newLots = allLots.map(l => l.uid === userLot.uid ? updatedLot : l);
-                localStorage.setItem('db_lots', JSON.stringify(newLots));
+                try {
+                    const updatedLot = await updateLotPayments(userLot.id, updatedPayments);
+                    setUserLot(updatedLot);
+                } catch (err) {
+                    alert("Erro ao atualizar pagamento.");
+                }
             };
 
             const gerarRecibo = (numParcela) => {
@@ -198,20 +216,18 @@ const ClientArea = () => {
                                                             const file = e.target.files[0];
                                                             if(!file) return;
                                                             const reader = new FileReader();
-                                                            reader.onload = () => {
+                                                            reader.onload = async () => {
                                                                 const updatedPayments = [...pagamentos];
                                                                 if (!updatedPayments[idx]) updatedPayments[idx] = {};
                                                                 updatedPayments[idx].comprovanteUrl = reader.result;
                                                                 updatedPayments[idx].comprovanteName = file.name;
-                                                                const updatedLot = { ...userLot, payments: updatedPayments };
+                                                                
                                                                 try {
-                                                                    const allLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
-                                                                    const newLots = allLots.map(l => l.uid === userLot.uid ? updatedLot : l);
-                                                                    localStorage.setItem('db_lots', JSON.stringify(newLots));
+                                                                    const updatedLot = await updateLotPayments(userLot.id, updatedPayments);
                                                                     setUserLot(updatedLot);
                                                                     alert(`Comprovante da parcela ${num} enviado para o administrador!`);
                                                                 } catch(err) {
-                                                                    alert('Arquivo de comprovante muito grande para storage local.');
+                                                                    alert('Erro ao enviar comprovante.');
                                                                 }
                                                             };
                                                             reader.readAsDataURL(file);

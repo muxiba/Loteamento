@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import mapaPlanta from '../assets/planta.jpg';
+import { useLots } from '../hooks/useLots';
+import { getMappedLots } from '../services/mapService';
+import { getConfig } from '../services/configService';
 
 const MapSection = ({ onSelectLotPrice }) => {
     const [selectedLot, setSelectedLot] = useState(null);
@@ -8,62 +11,51 @@ const MapSection = ({ onSelectLotPrice }) => {
     const [mappedLots, setMappedLots] = useState([]);
 
     const navigate = useNavigate();
+    const { lots, loading: lotsLoading } = useLots();
 
     useEffect(() => {
-        const savedMapped = localStorage.getItem('db_mapped');
-        let mapped = [];
-        if (savedMapped) {
-            mapped = JSON.parse(savedMapped);
-            setMappedLots(mapped);
-        }
-
-        const savedLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
-        let foundAvailable = false;
-        
-        // Auto select first available lot
-        for (let m of mapped) {
-            const officialData = savedLots.find(l => l.id === m.id);
-            if (officialData && officialData.status !== 'Vendido') {
-                const enriched = {
-                    id: officialData.id,
-                    name: officialData.id,
-                    size: officialData.size,
-                    price: officialData.price,
-                    status: officialData.status,
-                    desc: officialData.desc,
-                    type: officialData.price > 150000 ? 'premium' : 'standard'
-                };
-                setSelectedLot(enriched);
-                if (onSelectLotPrice) onSelectLotPrice(enriched);
-                foundAvailable = true;
-                break;
+        const loadMapData = async () => {
+            try {
+                const mapped = await getMappedLots();
+                setMappedLots(mapped);
+            } catch (err) {
+                console.error("Error loading map data:", err);
             }
-        }
+        };
+        loadMapData();
     }, []);
 
-    const getLotDetails = (lotId) => {
-        const savedLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
-        const officialData = savedLots.find(l => l.id === lotId);
-        
-        if (officialData) {
-            return {
-                id: officialData.id,
-                name: officialData.id,
-                size: officialData.size,
-                price: officialData.price,
-                status: officialData.status,
-                desc: officialData.desc,
-                type: officialData.price > 150000 ? 'premium' : 'standard'
-            };
+    // Auto select first available lot when lots or mappedLots change
+    useEffect(() => {
+        if (lots.length > 0 && mappedLots.length > 0 && !selectedLot) {
+            for (let m of mappedLots) {
+                const officialData = lots.find(l => l.id === m.id);
+                if (officialData && officialData.status !== 'Vendido') {
+                    const enriched = {
+                        ...officialData,
+                        name: officialData.id,
+                        type: (officialData.price || 0) > 150000 ? 'premium' : 'standard'
+                    };
+                    setSelectedLot(enriched);
+                    if (onSelectLotPrice) onSelectLotPrice(enriched);
+                    break;
+                }
+            }
         }
-        return null;
-    };
+    }, [lots, mappedLots]);
 
     const handleLotClick = (lotRect) => {
-        const enrichedLot = getLotDetails(lotRect.id);
-        setSelectedLot(enrichedLot);
-        if (enrichedLot && enrichedLot.status !== 'Vendido' && onSelectLotPrice) {
-            onSelectLotPrice(enrichedLot);
+        const officialData = lots.find(l => l.id === lotRect.id);
+        if (officialData) {
+            const enriched = {
+                ...officialData,
+                name: officialData.id,
+                type: (officialData.price || 0) > 150000 ? 'premium' : 'standard'
+            };
+            setSelectedLot(enriched);
+            if (enriched.status !== 'Vendido' && onSelectLotPrice) {
+                onSelectLotPrice(enriched);
+            }
         }
     };
 
@@ -71,6 +63,16 @@ const MapSection = ({ onSelectLotPrice }) => {
         // Redireciona o cliente para Módulo de Cadastro completo levando o ID do lote
         navigate('/proposta', { state: { lotId: selectedLot?.id } });
     };
+
+    const [mapImageUrl, setMapImageUrl] = useState(mapaPlanta);
+
+    useEffect(() => {
+        const loadMapImage = async () => {
+            const saved = await getConfig('map_custom_url');
+            if (saved) setMapImageUrl(saved);
+        };
+        loadMapImage();
+    }, []);
 
     return (
         <section id="mapa" className="map-section" style={{ padding: '80px 5%', background: '#f9f7f2' }}>
@@ -97,7 +99,7 @@ const MapSection = ({ onSelectLotPrice }) => {
                     {/* IMAGEM DE FUNDO DA PLANTA */}
                     <div style={{
                         position: 'absolute', inset: 0,
-                        backgroundImage: `url(${localStorage.getItem('mapa_customizado') || mapaPlanta})`, 
+                        backgroundImage: `url(${mapImageUrl})`, 
                         backgroundSize: '100% 100%',
                         backgroundRepeat: 'no-repeat',
                         backgroundPosition: 'center',
@@ -111,8 +113,7 @@ const MapSection = ({ onSelectLotPrice }) => {
                     )}
 
                     {mappedLots.map((lot, idx) => {
-                        const allLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
-                        const official = allLots.find(l => l.id === lot.id);
+                        const official = lots.find(l => l.id === lot.id);
                         const isSelected = selectedLot?.id === lot.id;
                         const isVendido = official?.status === 'Vendido';
                         const isReservado = official?.status === 'Reservado';
