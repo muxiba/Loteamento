@@ -930,7 +930,7 @@ const AdminArea = () => {
                                 <div key={item.id} style={{ border: '1px solid #eee', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
                                     <div style={{ height: '120px', background: '#000' }}>
                                         {item.type === 'image' && <img src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                                        {item.type === 'localVideo' && <video src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />}
+                                        {(item.type === 'localVideo' || item.url.includes('.mp4')) && <video src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls muted />}
                                     </div>
                                     <div style={{ padding: '10px', display: 'flex', justifyContent: 'center' }}>
                                         <button 
@@ -1054,10 +1054,10 @@ const AdminArea = () => {
                                     <tbody>
                                         {(() => {
                                             const currentLot = lots.find(l => l.id === financeSubView) || {};
-                                            const total = currentLot.totalParcelas || 120;
-                                            const pagamentos = currentLot.payments || [];
-                                            const baseParcela = currentLot.simulation?.parcelaInicial || 0;
-                                            const taxaAnual = currentLot.simulation?.taxa || 0.06;
+                                            const total = currentLot?.totalParcelas || 120;
+                                            const pagamentos = currentLot?.payments || [];
+                                            const baseParcela = currentLot?.simulation?.parcelaInicial || currentLot?.price / (currentLot?.totalParcelas || 120) || 0;
+                                            const taxaAnual = currentLot?.simulation?.taxa || 0.06;
 
                                             return Array.from({ length: total }).map((_, idx) => {
                                                 const num = idx + 1;
@@ -1120,13 +1120,13 @@ const AdminArea = () => {
                                     <div style={{ background: 'white', padding: '20px', borderRadius: '15px', boxShadow: 'var(--shadow)', borderLeft: '5px solid var(--color-forest)' }}>
                                         <small style={{ color: '#999', fontWeight: 'bold' }}>VGV VENDIDO</small>
                                         <h3 style={{ fontSize: '1.5rem', color: 'var(--color-forest)', marginTop: '5px' }}>
-                                            {lots.filter(l => l.status === 'Vendido').reduce((acc, l) => acc + (l.price || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                            {lots.filter(l => l.status === 'Vendido').reduce((acc, l) => acc + (Number(l.price) || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                         </h3>
                                     </div>
                                     <div style={{ background: 'white', padding: '20px', borderRadius: '15px', boxShadow: 'var(--shadow)', borderLeft: '5px solid var(--color-river)' }}>
                                         <small style={{ color: '#999', fontWeight: 'bold' }}>VGV DISPONÍVEL</small>
                                         <h3 style={{ fontSize: '1.5rem', color: 'var(--color-river)', marginTop: '5px' }}>
-                                            {lots.filter(l => l.status === 'Disponível').reduce((acc, l) => acc + (l.price || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                            {lots.filter(l => l.status === 'Disponível').reduce((acc, l) => acc + (Number(l.price) || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                         </h3>
                                     </div>
                                 </div>
