@@ -656,35 +656,75 @@ const AdminArea = () => {
                                                 <td style={{ textAlign: 'right', paddingRight: '15px' }}>
                                                     <button 
                                                         onClick={() => {
+                                                            const sim = user.simulation || {};
                                                             const printWindow = window.open('', '_blank');
                                                             printWindow.document.write(`
-                                                                <html><head><title>Proposta - ${user.name}</title>
-                                                                <style>body{font-family:sans-serif; padding:40px; color:#333; line-height:1.6;} .doc{border:1px solid #ccc; padding:40px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);} h2{color:#2d5a27; border-bottom:2px solid #2d5a27; padding-bottom:10px;} .grid{display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;} .label{font-size:12px; color:#666; display:block;}</style>
+                                                                <html><head><title>Contrato - ${user.name}</title>
+                                                                <style>
+                                                                    body{font-family:sans-serif; padding:50px; color:#333; line-height:1.5;}
+                                                                    .contract-paper{max-width:800px; margin:0 auto; border:1px solid #eee; padding:50px; box-shadow:0 0 10px rgba(0,0,0,0.05);}
+                                                                    .header{display:flex; justify-content:space-between; border-bottom:2px solid #2d5a27; padding-bottom:15px; margin-bottom:30px;}
+                                                                    h1{color:#2d5a27; font-size:22px; margin:0;}
+                                                                    h2{font-size:18px; text-align:center; margin:30px 0;}
+                                                                    .section-title{background:#f0f4f0; padding:5px 10px; font-weight:bold; margin:20px 0 10px 0; font-size:14px;}
+                                                                    .grid{display:grid; grid-template-columns:1fr 1fr; gap:15px; font-size:13px;}
+                                                                    .footer-sigs{display:grid; grid-template-columns:1fr 1fr; gap:50px; margin-top:80px; text-align:center; font-size:12px;}
+                                                                    hr{border:none; border-top:1px solid #000; margin-bottom:5px;}
+                                                                </style>
                                                                 </head><body>
-                                                                    <div class="doc">
-                                                                        <div style="text-align:right; font-size:12px;">Data da Proposta: ${new Date(user.created_at).toLocaleDateString('pt-BR')}</div>
-                                                                        <h2>RESERVA DO RIO - PROPOSTA DE COMPRA (APROVADO)</h2>
+                                                                    <div class="contract-paper">
+                                                                        <div class="header">
+                                                                            <div><h1>RESERVA DO RIO</h1><small>Loteamento Premium</small></div>
+                                                                            <div style="text-align:right"><strong>INSTRUMENTO DE PROPOSTA</strong><br/>Data: ${new Date(user.created_at).toLocaleDateString('pt-BR')}</div>
+                                                                        </div>
+
+                                                                        <h2>QUADRO RESUMO E PROPOSTA DE AQUISIÇÃO</h2>
+
+                                                                        <div class="section-title">1. PROMITENTE VENDEDORA</div>
                                                                         <div class="grid">
-                                                                            <div><span class="label">COMPRADOR:</span><strong>${user.name}</strong></div>
-                                                                            <div><span class="label">CPF:</span><strong>${user.cpf}</strong></div>
+                                                                            <div><strong>IADATA LTDA (IATEK ME)</strong></div>
+                                                                            <div>CNPJ: 44.921.307/0001-91</div>
                                                                         </div>
+
+                                                                        <div class="section-title">2. COMPRADOR (PROMISSÁRIO)</div>
                                                                         <div class="grid">
-                                                                            <div><span class="label">TELEFONE:</span><strong>${user.telefone}</strong></div>
-                                                                            <div><span class="label">E-MAIL:</span><strong>${user.email}</strong></div>
+                                                                            <div>Nome: <strong>${user.name}</strong></div>
+                                                                            <div>CPF: <strong>${user.cpf}</strong></div>
+                                                                            <div>E-mail: ${user.email}</div>
+                                                                            <div>Tel: ${user.telefone}</div>
                                                                         </div>
-                                                                        <hr/>
+
+                                                                        <div class="section-title">3. OBJETO E VALORES</div>
                                                                         <div class="grid">
-                                                                            <div><span class="label">LOTE ADQUIRIDO:</span><strong>${user.lote_id}</strong></div>
-                                                                            <div><span class="label">PRAZO PAGAMENTO:</span><strong>${user.total_parcelas} meses</strong></div>
+                                                                            <div>LOTE: <strong>${user.lote_id}</strong></div>
+                                                                            <div>ÁREA: ${sim.area || 'Conforme Planta'}</div>
+                                                                            <div>VALOR TOTAL: <strong>R$ ${Number(sim.valorTotal || user.price || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong></div>
+                                                                            <div>PRAZO: ${user.total_parcelas} Meses</div>
                                                                         </div>
-                                                                        <div style="background:#f9f9f9; padding:20px; border-radius:8px;">
-                                                                            <h4>VALORES CONTRATADOS</h4>
-                                                                            <p>Entrada: R$ ${user.simulation?.entrada?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '---'}</p>
-                                                                            <p>Parcela Inicial: R$ ${user.simulation?.primeiraParcela?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '---'}</p>
-                                                                            <p>Total do Investimento (Est.): R$ ${user.simulation?.totalGeral?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '---'}</p>
+
+                                                                        <div class="section-title">4. CONDIÇÕES DE PAGAMENTO</div>
+                                                                        <div style="font-size:13px;">
+                                                                            <p>O comprador propõe o pagamento da seguinte forma:</p>
+                                                                            <ul>
+                                                                                <li><strong>Entrada:</strong> R$ ${Number(sim.entrada || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</li>
+                                                                                <li><strong>Financiamento:</strong> ${user.total_parcelas} parcelas mensais de R$ ${Number(sim.primeiraParcela || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</li>
+                                                                                <li><strong>Reajuste:</strong> Correção anual projetada de 6% a.a.</li>
+                                                                            </ul>
+                                                                            <p style="font-size:11px; color:#666;">* Os valores acima são estimativas baseadas na simulação realizada em ${new Date(user.created_at).toLocaleString('pt-BR')}.</p>
                                                                         </div>
-                                                                        <br/><br/>
-                                                                        <p style="font-size:12px; color:#999; text-align:center;">Documento Gerado pelo Portal Reserva do Rio</p>
+
+                                                                        <div class="footer-sigs">
+                                                                            <div>
+                                                                                <hr/>
+                                                                                <strong>Empreendimentos Reserva do Rio LTDA</strong><br/>Representante Legal
+                                                                            </div>
+                                                                            <div>
+                                                                                <hr/>
+                                                                                <strong>${user.name}</strong><br/>Comprador
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <p style="text-align:center; font-size:10px; margin-top:50px; color:#aaa;">Autenticado eletronicamente via Portal do Cliente Reserva do Rio</p>
                                                                     </div>
                                                                     <script>window.print();</script>
                                                                 </body></html>
