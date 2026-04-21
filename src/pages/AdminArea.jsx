@@ -28,6 +28,7 @@ const AdminArea = () => {
     const [pendingUsers, setPendingUsers] = useState([]);
     const [approvedUsers, setApprovedUsers] = useState([]);
     const [drawnLots, setDrawnLots] = useState([]);
+    const [mapImageUrl, setMapImageUrl] = useState(mapaPlanta);
 
     // Load Initial Data from Supabase
     useEffect(() => {
@@ -39,6 +40,9 @@ const AdminArea = () => {
                 
                 const savedSim = await getConfig('sim_config');
                 if (savedSim) setSimConfig(savedSim);
+
+                const savedMap = await getConfig('map_custom_url');
+                if (savedMap) setMapImageUrl(savedMap);
 
                 // Users
                 const pending = await getUsers('pending');
@@ -617,7 +621,23 @@ const AdminArea = () => {
                                     ))}
                                 </div>
                             </div>
-                            <button onClick={clearMap} className="btn btn-secondary" style={{ borderColor: 'red', color: 'red', padding: '5px 15px', fontSize: '0.8rem' }}>Apagar Tudo</button>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    onClick={async () => {
+                                        const url = prompt("Cole a URL da nova imagem da planta (Hospedada no ImgBB, PostImages ou similar):");
+                                        if (url) {
+                                            await setConfig('map_custom_url', url);
+                                            setMapImageUrl(url);
+                                            alert("Mapa atualizado com sucesso!");
+                                        }
+                                    }}
+                                    className="btn btn-secondary"
+                                    style={{ padding: '5px 15px', fontSize: '0.8rem' }}
+                                >
+                                    Trocar JPG da Planta
+                                </button>
+                                <button onClick={clearMap} className="btn btn-secondary" style={{ borderColor: 'red', color: 'red', padding: '5px 15px', fontSize: '0.8rem' }}>Apagar Tudo</button>
+                            </div>
                         </div>
 
                         <div
@@ -628,7 +648,7 @@ const AdminArea = () => {
                                 position: 'relative',
                                 width: '100%',
                                 minHeight: '800px',
-                                background: `url(${localStorage.getItem('mapa_customizado') || mapaPlanta})`,
+                                background: `url(${mapImageUrl})`,
                                 backgroundSize: '100% 100%',
                                 backgroundRepeat: 'no-repeat',
                                 backgroundPosition: 'center',
