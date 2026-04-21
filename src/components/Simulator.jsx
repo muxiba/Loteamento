@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getLots } from '../services/lotsService';
+import { getConfig } from '../services/configService';
 
 const Simulator = ({ baseLot = { id: 'Nenhum', price: 120000 } }) => {
     const [config, setConfig] = useState({
@@ -11,18 +13,32 @@ const Simulator = ({ baseLot = { id: 'Nenhum', price: 120000 } }) => {
 
     const [availableLots, setAvailableLots] = useState([]);
     const [activeLot, setActiveLot] = useState(baseLot);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
-        const savedInfo = localStorage.getItem('db_sim_config');
-        if (savedInfo) {
-            setConfig(JSON.parse(savedInfo));
-        }
-        
-        const savedLots = JSON.parse(localStorage.getItem('db_lots') || '[]');
-        const disp = savedLots.filter(l => l.status !== 'Vendido');
-        setAvailableLots(disp);
-    }, []);
+        const loadInitialData = async () => {
+            try {
+                const savedInfo = await getConfig('sim_config');
+                if (savedInfo) setConfig(savedInfo);
+                
+                const allLots = await getLots();
+                const disp = allLots.filter(l => l.status === 'Disponível');
+                setAvailableLots(disp);
+
+                // If currently active lot is 'Nenhum', pick the first available one
+                if (baseLot.id === 'Nenhum' && disp.length > 0) {
+                    setActiveLot(disp[0]);
+                }
+            } catch (err) {
+                console.error("Error loading simulator data:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadInitialData();
+    }, [baseLot.id]);
 
     // Sync activeLot when map click changes the prop
     useEffect(() => {
