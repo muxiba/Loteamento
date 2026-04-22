@@ -112,6 +112,32 @@ const MapSection = ({ onSelectLotPrice }) => {
                         </div>
                     )}
 
+                    {/* BARRA DE SUCESSO DE VENDAS */}
+                    {lots.length > 0 && (
+                        <div style={{ 
+                            position: 'absolute', bottom: '20px', left: '20px', zIndex: 20, 
+                            background: 'rgba(255,255,255,0.95)', padding: '15px 25px', borderRadius: '12px',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.15)', border: '1px solid var(--color-forest)',
+                            maxWidth: '300px'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--color-dark)' }}>SUCESSO DE VENDAS</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--color-forest)' }}>
+                                    {Math.round((lots.filter(l => l.status === 'Vendido').length / lots.length) * 100)}% Vendido
+                                </span>
+                            </div>
+                            <div style={{ width: '100%', height: '8px', background: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                    width: `${(lots.filter(l => l.status === 'Vendido').length / lots.length) * 100}%`, 
+                                    height: '100%', background: 'var(--color-forest)', transition: 'width 1s ease-out' 
+                                }}></div>
+                            </div>
+                            <p style={{ fontSize: '0.7rem', color: '#666', marginTop: '8px', margin: '8px 0 0 0' }}>
+                                Restam apenas <strong>{lots.filter(l => l.status === 'Disponível').length}</strong> lotes disponíveis!
+                            </p>
+                        </div>
+                    )}
+
                     {mappedLots.map((lot, idx) => {
                         const official = lots.find(l => l.id === lot.id);
                         const isSelected = selectedLot?.id === lot.id;
@@ -123,8 +149,8 @@ const MapSection = ({ onSelectLotPrice }) => {
                         let borderColor = 'rgba(255,255,255,0.5)';
                         
                         if (isVendido) {
-                            bgColor = 'rgba(100, 100, 100, 0.6)';
-                            borderColor = '#666';
+                            bgColor = 'rgba(0, 0, 0, 0.65)';
+                            borderColor = '#333';
                         } else if (isReservado) {
                             bgColor = 'rgba(255, 152, 0, 0.6)';
                             borderColor = '#ff9800';
@@ -135,7 +161,7 @@ const MapSection = ({ onSelectLotPrice }) => {
                         }
 
                         let tooltipText = `Lote ${lot.id} - Disponível! Clique para simular.`;
-                        if (isVendido) tooltipText = `Lote ${lot.id} - Já Vendido (Indisponível)`;
+                        if (isVendido) tooltipText = `Lote ${lot.id} - Já Comercializado`;
                         if (isReservado) tooltipText = `Lote ${lot.id} - Reservado (Em análise)`;
 
                         return (
@@ -163,21 +189,26 @@ const MapSection = ({ onSelectLotPrice }) => {
                                     boxShadow: isSelected ? '0 0 20px rgba(0,0,0,0.3)' : 'none'
                                 }}
                             >
-                                <span style={{ 
-                                    fontSize: isSelected ? '0.9rem' : '0.75rem', 
-                                    textAlign: 'center',
-                                    background: isSelected ? 'white' : 'rgba(255,255,255,0.85)',
-                                    color: isSelected ? 'var(--color-forest)' : '#333',
-                                    padding: '2px 8px',
-                                    borderRadius: '5px',
-                                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                                    pointerEvents: 'none', 
-                                    whiteSpace: 'nowrap',
-                                    fontWeight: 'bold',
-                                    border: isSelected ? '2px solid var(--color-forest)' : '1px solid #ccc'
-                                }}>
-                                    {lot.id}
-                                </span>
+                                <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+                                    <span style={{ 
+                                        fontSize: isSelected ? '0.9rem' : '0.75rem', 
+                                        textAlign: 'center',
+                                        background: isSelected ? 'white' : (isVendido ? '#333' : 'rgba(255,255,255,0.85)'),
+                                        color: isSelected ? 'var(--color-forest)' : (isVendido ? 'white' : '#333'),
+                                        padding: '2px 8px',
+                                        borderRadius: '5px',
+                                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                                        pointerEvents: 'none', 
+                                        whiteSpace: 'nowrap',
+                                        fontWeight: 'bold',
+                                        border: isSelected ? '2px solid var(--color-forest)' : '1px solid #ccc'
+                                    }}>
+                                        {lot.id}
+                                    </span>
+                                    {isVendido && (
+                                        <span style={{ fontSize: '0.6rem', color: '#ff4d4f', fontWeight: '900', marginTop: '2px', textShadow:'0 1px 2px #000' }}>VENDIDO</span>
+                                    )}
+                                </div>
                             </div>
                         );
                     })}
