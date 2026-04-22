@@ -21,6 +21,7 @@ const AdminArea = () => {
     const [financeSubView, setFinanceSubView] = useState(null);
 
     const { lots, loading: lotsLoading, error: lotsError, addLot, editLot, removeLot, reload: reloadLots } = useLots();
+    const [pixKey, setPixKey] = useState('chave@pix.com');
 
     // Sincronizar dados ao trocar de aba ou entrar em um lote
     useEffect(() => {
@@ -32,9 +33,27 @@ const AdminArea = () => {
                 const approved = await getUsers('approved');
                 setApprovedUsers(approved);
             }
+            if (activeTab === 'site') {
+                const mapped = await getMappedLots();
+                setDrawnLots(mapped);
+                await reloadLots();
+            }
+            if (activeTab === 'galeria') {
+                const items = await getGalleryItems();
+                setGalleryItems(items);
+            }
         };
         refreshAll();
     }, [activeTab, editingLotUid, financeSubView]);
+
+    const savePixKey = async (val) => {
+        try {
+            await setConfig('pix_key', val);
+            alert("Chave PIX atualizada com sucesso!");
+        } catch (err) {
+            alert("Erro ao salvar chave PIX");
+        }
+    };
     const [simConfig, setSimConfig] = useState({ taxaAnual: 0.06, entradaMinima: 8500, descontoAvista: 10, maxParcelas: 100, valorBaseM2: 250 });
 
     const [galleryItems, setGalleryItems] = useState([]);
@@ -888,7 +907,7 @@ const AdminArea = () => {
                                     <select id="linkLotSelect" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', marginBottom: '20px', fontSize: '1rem' }}>
                                         <option value="">-- Selecione --</option>
                                         {lots.map(l => (
-                                            <option key={l.uid} value={l.id}>{l.id}</option>
+                                            <option key={l.id} value={l.id}>{l.id}</option>
                                         ))}
                                     </select>
                                     <div style={{ display: 'flex', gap: '10px' }}>
