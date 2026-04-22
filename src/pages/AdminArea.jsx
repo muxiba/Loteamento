@@ -771,7 +771,7 @@ const AdminArea = () => {
                                         <thead>
                                             <tr style={{ borderBottom: '2px solid #ddd', color: '#333' }}>
                                                 <th style={{ padding: '15px' }}>Nome / Lote</th>
-                                                <th>CPF (Login)</th>
+                                                <th>Login / Telefone</th>
                                                 <th>E-mail</th>
                                                 <th style={{ textAlign: 'right', paddingRight: '15px' }}>Ações</th>
                                             </tr>
@@ -783,7 +783,10 @@ const AdminArea = () => {
                                                         <strong>{user.name}</strong><br />
                                                         <small style={{ color: 'var(--color-river)' }}>{user.lote_id || 'Cadastro Site'}</small>
                                                     </td>
-                                                <td style={{ fontWeight: 'bold' }}>{user.cpf}</td>
+                                                <td style={{ fontWeight: 'bold' }}>
+                                                    {user.cpf}<br/>
+                                                    <small style={{color:'var(--color-river)', fontWeight:'normal'}}><i className="fab fa-whatsapp"></i> {user.telefone || '--'}</small>
+                                                </td>
                                                 <td>{user.email || '-'}</td>
                                                 <td style={{ textAlign: 'right', paddingRight: '15px' }}>
                                                     <button 

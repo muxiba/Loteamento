@@ -13,6 +13,7 @@ const Simulator = ({ baseLot = { id: 'Nenhum', price: 120000 } }) => {
 
     const [availableLots, setAvailableLots] = useState([]);
     const [activeLot, setActiveLot] = useState(baseLot);
+    const [mainBroker, setMainBroker] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -29,6 +30,11 @@ const Simulator = ({ baseLot = { id: 'Nenhum', price: 120000 } }) => {
                 // If currently active lot is 'Nenhum', pick the first available one
                 if (baseLot.id === 'Nenhum' && disp.length > 0) {
                     setActiveLot(disp[0]);
+                }
+                // Load Brokers
+                const brokersList = await getConfig('brokers_list');
+                if (brokersList && brokersList.length > 0) {
+                    setMainBroker(brokersList[0]);
                 }
             } catch (err) {
                 console.error("Error loading simulator data:", err);
@@ -79,8 +85,9 @@ const Simulator = ({ baseLot = { id: 'Nenhum', price: 120000 } }) => {
     const [showDocument, setShowDocument] = useState(false);
 
     const sendWhatsapp = () => {
-        const msg = `Segue sua simulação de pagamento do lote conforme solicitado.\nLote: ${activeLot?.id}\nValor Base: ${formatar(basePrice)}\nEntrada: ${formatar(entry)}\nParcelas: ${months}x de ${formatar(parcelaInicial)}\nEstimativa do Total Pago: ${formatar(totalPagoGeral)}`;
-        window.open(`https://wa.me/55${clientContact.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+        const targetPhone = mainBroker ? mainBroker.phone.replace(/\D/g, '') : '31992554019'; // Fallback se não cadastrar nada
+        const msg = `Olá! Acabei de fazer uma simulação no site Reserva do Rio:\n\nLote: ${activeLot?.id}\nValor Base: ${formatar(basePrice)}\nEntrada: ${formatar(entry)}\nParcelas: ${months}x de ${formatar(parcelaInicial)}\nEstimativa do Total Pago: ${formatar(totalPagoGeral)}\n\nGostaria de falar com um corretor sobre este plano.`;
+        window.open(`https://wa.me/55${targetPhone}?text=${encodeURIComponent(msg)}`, '_blank');
     };
 
     const handleGenerateProposal = () => {
