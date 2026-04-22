@@ -322,6 +322,77 @@ const MapSection = ({ onSelectLotPrice }) => {
                     )}
                 </div>
             </div>
+
+            {/* Tabela Resumo de Lotes */}
+            {!lotsLoading && lots.length > 0 && (
+                <div style={{ marginTop: '60px', animation: 'fadeIn 1s ease-out' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                        <h3 style={{ fontSize: '2rem', color: 'var(--color-forest)', fontFamily: "'Playfair Display', serif" }}>Quadro de Disponibilidade</h3>
+                        <p style={{ color: '#666' }}>Lista completa para consulta rápida de metragens e valores.</p>
+                    </div>
+                    
+                    <div style={{ overflowX: 'auto', background: 'white', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', padding: '5px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
+                            <thead>
+                                <tr style={{ background: '#f8f9fa', borderBottom: '2px solid #eee' }}>
+                                    <th style={{ padding: '20px', color: 'var(--color-forest)', fontWeight: 'bold' }}>LOTE</th>
+                                    <th style={{ padding: '20px', color: 'var(--color-forest)', fontWeight: 'bold' }}>STATUS</th>
+                                    <th style={{ padding: '20px', color: 'var(--color-forest)', fontWeight: 'bold' }}>ÁREA (m²)</th>
+                                    <th style={{ padding: '20px', color: 'var(--color-forest)', fontWeight: 'bold' }}>VALOR À VISTA</th>
+                                    <th style={{ padding: '20px', color: 'var(--color-forest)', fontWeight: 'bold' }}>DIMENSÕES / DETALHES</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[...lots].sort((a, b) => {
+                                    const numA = parseInt(a.id.replace(/\D/g, '')) || 0;
+                                    const numB = parseInt(b.id.replace(/\D/g, '')) || 0;
+                                    return numA - numB;
+                                }).map((lot, idx) => {
+                                    const isVendido = lot.status === 'Vendido';
+                                    const isReservado = lot.status === 'Reservado';
+                                    
+                                    return (
+                                        <tr key={idx} style={{ 
+                                            borderBottom: '1px solid #f0f0f0', 
+                                            transition: 'background 0.2s',
+                                            cursor: isVendido ? 'default' : 'pointer'
+                                        }}
+                                        onMouseEnter={(e) => { if(!isVendido) e.currentTarget.style.background = '#fcfbf7'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                        onClick={() => {
+                                            if(!isVendido) {
+                                                const mapped = mappedLots.find(m => m.id === lot.id);
+                                                if(mapped) handleLotClick(mapped);
+                                                window.scrollTo({ top: document.getElementById('mapa').offsetTop, behavior: 'smooth' });
+                                            }
+                                        }}>
+                                            <td style={{ padding: '20px', fontWeight: '700', color: 'var(--color-dark)' }}>{lot.id}</td>
+                                            <td style={{ padding: '20px' }}>
+                                                <span style={{ 
+                                                    padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase',
+                                                    background: isVendido ? '#ffebee' : (isReservado ? '#fff3e0' : '#e8f5e9'),
+                                                    color: isVendido ? '#c62828' : (isReservado ? '#e65100' : '#2e7d32'),
+                                                    display: 'inline-flex', alignItems: 'center', gap: '5px'
+                                                }}>
+                                                    <i className={`fas ${isVendido ? 'fa-times-circle' : (isReservado ? 'fa-clock' : 'fa-check-circle')}`}></i>
+                                                    {lot.status}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '20px', fontWeight: '500' }}>{lot.size}</td>
+                                            <td style={{ padding: '20px', fontWeight: '700', color: isVendido ? '#999' : 'var(--color-river)' }}>
+                                                {isVendido ? 'Indisponível' : lot.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                            </td>
+                                            <td style={{ padding: '20px', fontSize: '0.85rem', color: '#666', maxWidth: '300px' }}>
+                                                {lot.desc || 'Consulte o memorial descritivo para vértices.'}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </section>
     );
 };
