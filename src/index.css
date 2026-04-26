@@ -342,12 +342,7 @@ input[type=range]::-webkit-slider-thumb {
         padding: 10px;
     }
     
-    /* Trava de proporção para o mapa não distorcer */
-    [style*="minHeight: 800px"] {
-        min-height: 400px !important; 
-        height: 400px !important;
-        overflow-x: auto !important; /* Permite scroll se for muito largo */
-    }
+
 
     .lot-details {
         margin-top: 20px;
@@ -370,7 +365,5 @@ input[type=range]::-webkit-slider-thumb {
 @media (max-width: 480px) {
     .hero { height: 70vh; }
     header .logo { font-size: 1.2rem; }
-    [style*="minHeight: 800px"] {
-        height: 300px !important;
-    }
+
 }

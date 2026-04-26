@@ -79,31 +79,27 @@ const MapSection = ({ onSelectLotPrice }) => {
             <h2 className="section-title" style={{ textAlign: 'center', fontSize: '2.5rem', color: 'var(--color-forest)', fontFamily: "'Playfair Display', serif" }}>Mapa de Disponibilidade</h2>
             <p className="section-subtitle" style={{ textAlign: 'center', color: '#666', maxWidth: '600px', margin: '0 auto 3rem auto' }}>Explore a planta. Os blocos coloridos foram mapeados pela administração. Clique neles para ver detalhes da disponibilidade.</p>
             
-            <div className="map-container" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '40px', background: 'white', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', padding: '20px' }}>
+            <div className="map-container">
                 
                 {/* Esquerda: Mapa Visual com a Planta Real e os Desenhados pelo Admin */}
-                <div style={{ position: 'relative', width: '100%', minHeight: '800px', backgroundColor: '#e8f5e9', borderRadius: '15px', overflow: 'hidden', border: '2px solid #ddd' }}>
+                <div style={{ position: 'relative', width: '100%', backgroundColor: '#e8f5e9', borderRadius: '15px', overflow: 'hidden', border: '2px solid #ddd' }}>
                     
-                    {/* BOTÃO AMPLIAR MAPA */}
-                    <button 
-                        onClick={() => setIsExpanded(true)}
-                        style={{
-                            position: 'absolute', top: '20px', right: '20px', zIndex: 20,
-                            background: 'white', border: 'none', padding: '10px 15px', borderRadius: '8px',
-                            boxShadow: '0 5px 15px rgba(0,0,0,0.2)', cursor: 'pointer', fontWeight: 'bold',
-                            color: 'var(--color-forest)', display: 'flex', alignItems: 'center', gap: '8px'
-                        }}>
-                        <i className="fas fa-expand-arrows-alt"></i> Ampliar Planta
-                    </button>
-
-                    {/* IMAGEM DE FUNDO DA PLANTA */}
-                    <div style={{
-                        position: 'absolute', inset: 0,
-                        backgroundImage: `url(${mapImageUrl})`, 
-                        backgroundSize: '100% 100%',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'center',
-                    }}></div>
+                    {/* IMAGEM DA PLANTA COMO BASE (Define a proporção correta responsivamente) */}
+                    <img src={mapImageUrl} alt="Planta do Loteamento" style={{ display: 'block', width: '100%', height: 'auto', pointerEvents: 'none' }} />
+                    
+                    {/* CAMADA DE SOBREPOSIÇÃO PARA OS LOTES E CONTROLES */}
+                    <div style={{ position: 'absolute', inset: 0 }}>
+                        {/* BOTÃO AMPLIAR MAPA */}
+                        <button 
+                            onClick={() => setIsExpanded(true)}
+                            style={{
+                                position: 'absolute', top: '20px', right: '20px', zIndex: 20,
+                                background: 'white', border: 'none', padding: '10px 15px', borderRadius: '8px',
+                                boxShadow: '0 5px 15px rgba(0,0,0,0.2)', cursor: 'pointer', fontWeight: 'bold',
+                                color: 'var(--color-forest)', display: 'flex', alignItems: 'center', gap: '8px'
+                            }}>
+                            <i className="fas fa-expand-arrows-alt"></i> Ampliar Planta
+                        </button>
 
                     {/* Blocos Desenhados puxados do sistema do Admin */}
                     {mappedLots.length === 0 && (
@@ -212,6 +208,7 @@ const MapSection = ({ onSelectLotPrice }) => {
                             </div>
                         );
                     })}
+                    </div>
                 </div>
 
                 {/* MODAL DO MAPA EXPANDIDO */}
