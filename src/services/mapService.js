@@ -9,7 +9,7 @@ export const getMappedLots = async () => {
         console.error("Error fetching mapped lots:", error)
         throw error
     }
-    return data
+    return data || []
 }
 
 export const saveMappedLots = async (lots) => {

@@ -4,6 +4,33 @@ import { supabase } from '../lib/supabaseClient';
 import { getConfig } from '../services/configService';
 import { updateLotPayments } from '../services/lotsService';
 
+const compressImage = (file, callback) => {
+    if (!file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = () => callback(reader.result);
+        reader.readAsDataURL(file);
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const max = 1200;
+            if (width > height && width > max) { height *= max / width; width = max; }
+            else if (height > max) { width *= max / height; height = max; }
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            callback(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
 const ClientArea = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [viewRequested, setViewRequested] = useState(false);
@@ -20,7 +47,7 @@ const ClientArea = () => {
 
     useEffect(() => {
         const loadLots = async () => {
-            const { data } = await supabase.from('lots').select('*');
+            const { data } = await supabase.from('lots').select('id, size, price');
             if (data) setLots(data);
         };
         loadLots();
@@ -331,11 +358,10 @@ const ClientArea = () => {
                                                         <input type="file" onChange={(e) => {
                                                             const file = e.target.files[0];
                                                             if(!file) return;
-                                                            const reader = new FileReader();
-                                                            reader.onload = async () => {
+                                                            compressImage(file, async (base64Result) => {
                                                                 const updatedPayments = [...pagamentos];
                                                                 if (!updatedPayments[idx]) updatedPayments[idx] = {};
-                                                                updatedPayments[idx].comprovanteUrl = reader.result;
+                                                                updatedPayments[idx].comprovanteUrl = base64Result;
                                                                 updatedPayments[idx].comprovanteName = file.name;
                                                                 
                                                                 try {
@@ -345,8 +371,7 @@ const ClientArea = () => {
                                                                 } catch(err) {
                                                                     alert('Erro ao enviar comprovante.');
                                                                 }
-                                                            };
-                                                            reader.readAsDataURL(file);
+                                                            });
                                                         }} style={{ width: '150px', fontSize: '0.7rem' }} disabled={isQuitado} />
                                                     )}
                                                 </td>
@@ -382,7 +407,7 @@ const ClientArea = () => {
         }
 
         if (activeTab === 'documentos') {
-            const adminDocs = userLot.adminDocs || {};
+            const adminDocs = userLot.administrative_docs?.adminDocs || {};
             
             const handleClientUpload = (e) => {
                 const file = e.target.files[0];
@@ -390,27 +415,27 @@ const ClientArea = () => {
                 const fileName = prompt("Qual o nome deste documento? (Ex: RG de Fulano)", file.name);
                 if(!fileName) return;
 
-                const reader = new FileReader();
-                reader.onload = async () => {
-                    const clientDocs = userLot.clientDocs || [];
-                    const newDoc = { name: fileName, url: reader.result };
-                    const updatedPayments = userLot.payments || [];
+                compressImage(file, async (base64Result) => {
+                    const currentAdmin = userLot.administrative_docs || {};
+                    const clientDocs = currentAdmin.clientDocs || [];
+                    const newDoc = { name: fileName, url: base64Result };
+                    const updatedAdmin = { ...currentAdmin, clientDocs: [...clientDocs, newDoc] };
                     
                     try {
                         const { data, error } = await supabase
                             .from('lots')
-                            .update({ clientDocs: [...clientDocs, newDoc] })
+                            .update({ administrative_docs: updatedAdmin })
                             .eq('id', userLot.id)
                             .select()
                             .single();
                         
+                        if (error) throw error;
                         if (data) setUserLot(data);
                         alert('Upload de documento enviado à administração com sucesso!');
                     } catch(err) {
                         alert('Erro ao enviar documento.');
                     }
-                };
-                reader.readAsDataURL(file);
+                });
             };
 
             return (
@@ -443,12 +468,14 @@ const ClientArea = () => {
                         <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '15px' }}>Envie seus documentos de identificação, certidões ou comprovantes avulsos para que o administrador aprove.</p>
                         <input type="file" onChange={handleClientUpload} style={{ width: '100%', padding: '10px', background: 'white', border: '1px solid #ccc', borderRadius: '5px' }} />
                         
-                        {(userLot.clientDocs && userLot.clientDocs.length > 0) && (
+                        {(userLot.administrative_docs?.clientDocs && userLot.administrative_docs.clientDocs.length > 0) && (
                             <div style={{ marginTop: '20px' }}>
                                 <strong>Enviados por você:</strong>
                                 <ul style={{ marginTop: '10px', paddingLeft: '20px', fontSize: '0.9rem' }}>
-                                    {userLot.clientDocs.map((doc, i) => (
-                                        <li key={i}>{doc.name}</li>
+                                    {userLot.administrative_docs.clientDocs.map((doc, i) => (
+                                        <li key={i} style={{ marginBottom: '5px' }}>
+                                            <a href={doc.url} download={doc.name} style={{ color: 'var(--color-river)', fontWeight: 'bold' }}>{doc.name}</a>
+                                        </li>
                                     ))}
                                 </ul>
                             </div>

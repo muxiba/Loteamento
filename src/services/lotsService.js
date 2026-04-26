@@ -10,7 +10,20 @@ export const getLots = async () => {
         console.error("Error fetching lots:", error)
         throw error
     }
-    return data
+    return data || []
+}
+
+export const getLotsSummary = async () => {
+    const { data, error } = await supabase
+        .from('lots')
+        .select('id, size, price, status, desc, client')
+        .order('id')
+
+    if (error) {
+        console.error("Error fetching lots summary:", error)
+        throw error
+    }
+    return data || []
 }
 
 export const createLot = async (lot) => {

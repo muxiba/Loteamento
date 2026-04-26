@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import mapaPlanta from '../assets/planta.jpg';
-import { useLots } from '../hooks/useLots';
+import { useLotsSummary } from '../hooks/useLots';
 import { getMappedLots } from '../services/mapService';
 import { getConfig } from '../services/configService';
 
@@ -11,7 +11,7 @@ const MapSection = ({ onSelectLotPrice }) => {
     const [mappedLots, setMappedLots] = useState([]);
 
     const navigate = useNavigate();
-    const { lots, loading: lotsLoading } = useLots();
+    const { lots, loading: lotsLoading } = useLotsSummary();
 
     useEffect(() => {
         const loadMapData = async () => {

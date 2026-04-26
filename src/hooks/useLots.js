@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getLots, createLot, updateLot, deleteLot } from '../services/lotsService'
+import { getLots, getLotsSummary, createLot, updateLot, deleteLot } from '../services/lotsService'
 
 export const useLots = () => {
     const [lots, setLots] = useState([])
@@ -56,4 +56,33 @@ export const useLots = () => {
     }, [])
 
     return { lots, loading, error, addLot, editLot, removeLot, reload: loadLots }
+}
+
+export const useLotsSummary = () => {
+    const [lots, setLots] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+
+    const loadLots = async () => {
+        try {
+            setLoading(true)
+            const data = await getLotsSummary()
+            setLots(data)
+            setError(null)
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        let isMounted = true;
+        loadLots().then(() => {
+            if (!isMounted) return;
+        });
+        return () => { isMounted = false; };
+    }, [])
+
+    return { lots, loading, error, reload: loadLots }
 }

@@ -199,13 +199,18 @@ const AdminArea = () => {
             
             // 2. Vincular dados ao Lote Oficial
             if (currentUser.lote_id) {
+                const existingLot = lots.find(l => l.id === currentUser.lote_id);
+                const currentAdminDocs = existingLot?.administrative_docs || {};
                 await editLot(currentUser.lote_id, {
                     status: 'Vendido',
                     client: currentUser.name,
-                    clientPhone: currentUser.telefone,
                     price: currentUser.simulation?.totalGeral || currentUser.price,
                     totalParcelas: currentUser.total_parcelas || 120,
-                    simulation: currentUser.simulation // Guardar simulação no lote para o gráfico
+                    administrative_docs: {
+                        ...currentAdminDocs,
+                        clientPhone: currentUser.telefone,
+                        simulation: currentUser.simulation
+                    }
                 });
             }
 
@@ -555,9 +560,14 @@ const AdminArea = () => {
                                         if (!file) return;
                                         const reader = new FileReader();
                                         reader.onload = async () => {
-                                            const adminDocs = editingLot.adminDocs || {};
-                                            await editLot(editingLot.id, { adminDocs: { ...adminDocs, contrato: { url: reader.result, name: file.name } } });
-                                            alert("Contrato oficial anexado ao portal do cliente!");
+                                            try {
+                                                const currentAdmin = editingLot.administrative_docs || {};
+                                                const adminDocs = currentAdmin.adminDocs || {};
+                                                await editLot(editingLot.id, { administrative_docs: { ...currentAdmin, adminDocs: { ...adminDocs, contrato: { url: reader.result, name: file.name } } } });
+                                                alert("Contrato oficial anexado ao portal do cliente!");
+                                            } catch (err) {
+                                                alert("Erro ao enviar contrato.");
+                                            }
                                         };
                                         reader.readAsDataURL(file);
                                     }} style={{ width: '100%', fontSize: '0.8rem', marginBottom: '10px' }} />
@@ -568,18 +578,23 @@ const AdminArea = () => {
                                         if (!file) return;
                                         const reader = new FileReader();
                                         reader.onload = async () => {
-                                            const adminDocs = editingLot.adminDocs || {};
-                                            await editLot(editingLot.id, { adminDocs: { ...adminDocs, memorial: { url: reader.result, name: file.name } } });
-                                            alert("Memorial descritivo enviado ao portal do cliente!");
+                                            try {
+                                                const currentAdmin = editingLot.administrative_docs || {};
+                                                const adminDocs = currentAdmin.adminDocs || {};
+                                                await editLot(editingLot.id, { administrative_docs: { ...currentAdmin, adminDocs: { ...adminDocs, memorial: { url: reader.result, name: file.name } } } });
+                                                alert("Memorial descritivo enviado ao portal do cliente!");
+                                            } catch (err) {
+                                                alert("Erro ao enviar memorial.");
+                                            }
                                         };
                                         reader.readAsDataURL(file);
                                     }} style={{ width: '100%', fontSize: '0.8rem', marginBottom: '10px' }} />
 
                                     <div style={{ marginTop: '20px', borderTop: '1px solid #ddd', paddingTop: '15px' }}>
                                         <h4 style={{ fontSize: '0.9rem', color: 'var(--color-dark)', marginBottom: '10px' }}><i className="fas fa-inbox"></i> Documentos Enviados pelo Cliente</h4>
-                                        {editingLot.clientDocs && editingLot.clientDocs.length > 0 ? (
+                                        {editingLot.administrative_docs?.clientDocs && editingLot.administrative_docs.clientDocs.length > 0 ? (
                                             <ul style={{ paddingLeft: '20px', fontSize: '0.85rem' }}>
-                                                {editingLot.clientDocs.map((doc, idx) => (
+                                                {editingLot.administrative_docs.clientDocs.map((doc, idx) => (
                                                     <li key={idx} style={{ marginBottom: '5px' }}>
                                                         <a href={doc.url} download={doc.name} style={{ color: 'var(--color-river)', fontWeight: 'bold' }}>{doc.name}</a>
                                                     </li>
