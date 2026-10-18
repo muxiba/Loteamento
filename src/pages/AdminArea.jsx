@@ -33,7 +33,7 @@ const AdminArea = () => {
     const [financeSubView, setFinanceSubView] = useState(null);
 
     const { lots: rawLots, loading: lotsLoading, error: lotsError, addLot, editLot, removeLot, reload: reloadLots } = useLots();
-    const [pixKey, setPixKey] = useState('chave@pix.com');
+    const [pixKey, setPixKey] = useState('');
 
     // Sincronizar dados ao trocar de aba ou entrar em um lote
     useEffect(() => {
@@ -460,7 +460,7 @@ const AdminArea = () => {
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>CPF do Comprador (Vincular ao Portal):</label>
                                 <input 
                                     type="text" 
-                                    defaultValue={editingLot.client_cpf || ''} 
+                                    defaultValue={editingLot.clientCpf || ''} 
                                     onBlur={async (e) => {
                                         try {
                                             await editLot(editingLot.id, { client_cpf: e.target.value });
@@ -787,7 +787,7 @@ const AdminArea = () => {
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)', marginBottom: '30px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <div>
-                                <h3><i className="fas fa-map-marked-alt" style={{ color: 'var(--color-forest)' }}></i> 3. Vitrine: Conectar Polígonos na Planta</h3>
+                                <h3><i className="fas fa-map-marked-alt" style={{ color: 'var(--color-forest)' }}></i> Áreas interativas da planta</h3>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
                                     {drawnLots.map((l, idx) => (
                                         <span key={idx} style={{ background: '#eee', padding: '5px 10px', borderRadius: '20px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -802,7 +802,7 @@ const AdminArea = () => {
                                     onClick={async () => {
                                         const url = prompt("Cole a URL da nova imagem da planta (Hospedada no ImgBB, PostImages ou similar):");
                                         if (url) {
-                                            await setConfig('map_custom_url', url);
+                                            try { await setConfig('map_custom_url', url); } catch(error){setAdminError(error.message);return;}
                                             setMapImageUrl(url);
                                             alert("Mapa atualizado com sucesso!");
                                         }
@@ -892,7 +892,7 @@ const AdminArea = () => {
 
                 {activeTab === 'galeria' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
-                        <h3>4. Fotos e vídeos do empreendimento</h3>
+                        <h3>Materiais publicados</h3>
                         <p style={{ color: '#666', marginBottom: '20px' }}>Selecione imagens ou vídeos para publicar. Imagens e vídeos aparecerão para todos os clientes.</p>
                         
                         <div style={{ background: '#f5f5f5', padding: '20px', borderRadius: '10px', marginBottom: '30px', border: '2px dashed #ccc', textAlign: 'center' }}>
@@ -940,11 +940,11 @@ const AdminArea = () => {
                 {/* --- 5. TEXTOS --- */}
                 {activeTab === 'copywriting' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
-                        <h3>5. Editor de Textos</h3>
+                        <h3>Texto de apresentação</h3>
                         <textarea aria-label="Texto de apresentação do empreendimento" id="copyEditor" value={aboutCopy} onChange={e=>setAboutCopy(e.target.value)} style={{ width: '100%', height: '300px', padding: '15px', borderRadius: '8px', border: '1px solid #ddd' }} />
                         <button className="btn btn-primary" style={{ marginTop: '20px' }} onClick={async () => {
                             const val = aboutCopy;
-                            await setConfig('about_text', val);
+                            try { await setConfig('about_text', val); } catch(error){setAdminError(error.message);return;}
                             alert('Atualizado!');
                         }}>Salvar Textos</button>
                     </div>
@@ -994,7 +994,8 @@ const AdminArea = () => {
                                 descontoAvista: Number(document.getElementById('cfg_desconto').value),
                                 maxParcelas: Number(document.getElementById('cfg_maxparc').value)
                             };
-                            await setConfig('sim_config', newConf);
+                            if(Object.values(newConf).some(v=>!Number.isFinite(v)) || newConf.valorBaseM2<=0 || newConf.entradaMinima<0 || newConf.taxaAnual<0 || newConf.taxaAnual>1 || newConf.descontoAvista<0 || newConf.descontoAvista>100 || !Number.isInteger(newConf.maxParcelas) || newConf.maxParcelas<1 || newConf.maxParcelas>600)return alert('Confira os valores: parcelas de 1 a 600, desconto de 0 a 100% e valores positivos.');
+                            try { await setConfig('sim_config', newConf); } catch(error){setAdminError(error.message);return;}
                             setSimConfig(newConf);
 
                             alert("Condições atualizadas. Os preços dos lotes e contratos existentes foram preservados.");
@@ -1194,7 +1195,7 @@ const AdminArea = () => {
                 {/* --- 9. EQUIPE DE CORRETORES --- */}
                 {activeTab === 'brokers' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
-                        <h3>9. Equipe de Corretores Oficiais</h3>
+                        <h3>Corretores cadastrados</h3>
                         <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px' }}>Cadastre os corretores que atenderão os clientes do site. O primeiro da lista será o contato principal do WhatsApp.</p>
                         
                         <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '10px', marginBottom: '30px' }}>
@@ -1214,13 +1215,16 @@ const AdminArea = () => {
                                 <button
                                     onClick={async () => {
                                         const name = document.getElementById('broker_name').value;
-                                        const phone = document.getElementById('broker_phone').value;
+                                        const phone = document.getElementById('broker_phone').value.replace(/\D/g,'');
+                                        const creci=document.getElementById('broker_creci').value.trim();
                                         if(!name || !phone) return alert("Preencha Nome e Telefone");
-                                        const newBrokers = [...brokers, { id: Date.now(), name, phone }];
-                                        await setConfig('brokers_list', newBrokers);
+                                        if(phone.length<10 || phone.length>13)return alert("Informe um WhatsApp com DDD.");
+                                        const newBrokers = [...brokers, { id: Date.now(), name:name.trim(), phone, creci }];
+                                        try { await setConfig('brokers_list', newBrokers); } catch(error){setAdminError(error.message);return;}
                                         setBrokers(newBrokers);
                                         document.getElementById('broker_name').value = '';
                                         document.getElementById('broker_phone').value = '';
+                                        document.getElementById('broker_creci').value = '';
                                     }}
                                     className="btn btn-primary"
                                     style={{ padding: '10px 20px' }}
@@ -1242,14 +1246,14 @@ const AdminArea = () => {
                                 {brokers.map((b, idx) => (
                                     <tr key={b.id} style={{ borderBottom: '1px solid #eee', background: idx === 0 ? '#f0f9f4' : 'transparent' }}>
                                         <td style={{ padding: '15px' }}>
-                                            <strong>{b.name}</strong> {idx === 0 && <span style={{ color: 'var(--color-forest)', fontSize: '0.7rem' }}>(Principal do Site)</span>}
+                                            <strong>{b.name}</strong>{b.creci&&<small style={{display:'block'}}>CRECI: {b.creci}</small>} {idx === 0 && <span style={{ color: 'var(--color-forest)', fontSize: '0.7rem' }}>(Principal do Site)</span>}
                                         </td>
                                         <td>{b.phone}</td>
                                         <td style={{ textAlign: 'right' }}>
                                             <button 
                                                 onClick={async () => {
                                                     const updated = brokers.filter(x => x.id !== b.id);
-                                                    await setConfig('brokers_list', updated);
+                                                    try { await setConfig('brokers_list', updated); } catch(error){setAdminError(error.message);return;}
                                                     setBrokers(updated);
                                                 }}
                                                 style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }}
