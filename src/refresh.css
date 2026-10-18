@@ -1,5 +1,5 @@
 :root { --color-forest: #244c3e; --color-sand: #e9caa1; --color-light: #f6f5ef; }
-html { scroll-behavior: smooth; scroll-padding-top: 110px; }
+html { font-size: 17px; scroll-behavior: smooth; scroll-padding-top: 110px; }
 button, input, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #ca963e; outline-offset: 4px; }
@@ -105,3 +105,17 @@ dialog::backdrop { background: #0b281dcc; backdrop-filter: blur(5px); }.expanded
 .video-loading svg { animation: video-spin 1s linear infinite; }
 @keyframes video-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .video-loading svg { animation: none; } }
+
+/* Pequeno ajuste de legibilidade, mantendo o layout. */
+.site-navigation > a { font-size: 14px; }
+.eyebrow { font-size: 12px; }
+.lot-toolbar input, .lot-toolbar select, .view-toggle button { font-size: 14px; }
+.inventory-stats span, .map-topline, .media-caption { font-size: 14px; }
+.map-footnote, .footer-bottom { font-size: 12px; }
+.footer-top p, .footer-top nav a { font-size: 14px; }
+.simulator-section p[style*="0.8rem"] { font-size: .9rem !important; }
+@media (max-width: 600px) {
+ .site-navigation > a { font-size: 15px; }
+ .media-caption, .inventory-stats span { font-size: 12px; }
+ .lot-toolbar input, .lot-toolbar select { font-size: 16px; }
+}

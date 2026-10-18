@@ -63,7 +63,7 @@ const Simulator = ({ baseLot = { id: 'Nenhum', price: 120000 } }) => {
     }, [config.entradaMinima]);
 
     // Opções de simulação baseadas no Lote Ativo
-    const basePrice = activeLot?.price || 120000;
+    const basePrice = Number(activeLot?.price || 120000);
     const saldo = basePrice - entry;
     const parcelaInicial = saldo > 0 ? saldo / months : 0;
     const anos = Math.ceil(months / 12);
@@ -81,7 +81,7 @@ const Simulator = ({ baseLot = { id: 'Nenhum', price: 120000 } }) => {
 
     const valorAVista = basePrice * (1 - (config.descontoAvista / 100));
 
-    const formatar = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const formatar = (val) => Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     // Export e Whatsapp
     const [clientName, setClientName] = useState('');
