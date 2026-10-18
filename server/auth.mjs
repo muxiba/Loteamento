@@ -23,8 +23,8 @@ export async function login(req,res,body) {
  const {rows}=await query(admin?'SELECT * FROM app_admins WHERE lower(login)=$1':"SELECT * FROM users WHERE regexp_replace(cpf,'[^0-9]','','g')=$1",[login]);
  if(!dummyHash) {const {hashPassword}=await import('./security.mjs');dummyHash=await hashPassword('unavailable-account-dummy-password');}
  const row=rows[0];const valid=await verifyPassword(body.password,admin?row?.password_hash || dummyHash:row?.password || dummyHash);
- if(!row || !valid)throw new HttpError(401,'Login ou senha inv�lidos.');
- if(!admin && row.status!=='approved')throw new HttpError(403,'Cadastro aguardando aprova��o da administra��o.');
+ if(!row || !valid)throw new HttpError(401,'Login ou senha inválidos.');
+ if(!admin && row.status!=='approved')throw new HttpError(403,'Cadastro aguardando aprovação da administração.');
  const token=newToken();await query("INSERT INTO app_sessions(token_hash,user_id,role,expires_at) VALUES($1,$2,$3,now()+interval '8 hours')",[digest(token),row.id,admin?'admin':'client']);
  res.setHeader('Set-Cookie',sessionCookie(token,Boolean(process.env.VERCEL)));
  return {role:admin?'admin':'client',user:publicUser(row)};

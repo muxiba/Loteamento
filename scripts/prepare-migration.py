@@ -54,7 +54,7 @@ def main():
         marker='/storage/v1/object/public/'
         if value.startswith(('https://','http://')) and marker in urlsplit(value).path:
             relative=unquote(urlsplit(value).path.split(marker,1)[1])
-            if relative not in old_urls:raise ValueError('Refer�ncia a arquivo ausente do backup.')
+            if relative not in old_urls:raise ValueError('Referência a arquivo ausente do backup.')
             return old_urls[relative]
         return value
     for lot in tables['lots']:
@@ -71,7 +71,7 @@ def main():
     checksum=hashlib.sha256(dumps[0].read_bytes()+archives[0].read_bytes()).hexdigest()
     payload={'id':'supabase-original-import','checksum':checksum,'tables':tables,'files':files}
     (output/'input.json').write_text(json.dumps(payload,ensure_ascii=False),encoding='utf-8')
-    print('Migra��o preparada (ainda n�o importada):',json.dumps({k:len(v) for k,v in tables.items()}),'arquivos:',len(files))
+    print('Migração preparada (ainda não importada):',json.dumps({k:len(v) for k,v in tables.items()}),'arquivos:',len(files))
     print('Senhas convertidas em hashes; anexos separados dos registros. Nenhum dado foi publicado.')
 
 if __name__=='__main__':main()

@@ -42,7 +42,7 @@ const ClientArea = () => {
     const [senha, setSenha] = useState('');
     const [activeTab, setActiveTab] = useState('financeiro');
     
-    const [userData, setUserData] = useState(null); // Guardar dados do usu�rio logado
+    const [userData, setUserData] = useState(null); // Guardar dados do usuário logado
     const [userLot, setUserLot] = useState(null);
     const [pixKey, setPixKey] = useState('carregando...');
     const [lots, setLots] = useState([]);
@@ -61,7 +61,7 @@ const ClientArea = () => {
             if (isLoggedIn && userData?.lote_id) {
                 const account = await getAccount();
                 const data = account.lot;
-                setPixKey(account.pixKey || "Chave PIX n�o informada");
+                setPixKey(account.pixKey || "Chave PIX não informada");
                 if (data) setUserLot(data);
             }
         };
@@ -86,51 +86,51 @@ const ClientArea = () => {
             </style>
             </head><body>
                 <div class="contract-paper">
-                    <h1>CONTRATO PARTICULAR DE PROMESSA DE COMPRA E VENDA DE IM�VEL<br/>(ALIENA��O FIDUCI�RIA)</h1>
+                    <h1>CONTRATO PARTICULAR DE PROMESSA DE COMPRA E VENDA DE IMÓVEL<br/>(ALIENAÇÃO FIDUCIÁRIA)</h1>
 
                     <p>
                         Pelo presente instrumento particular, de um lado, na qualidade de <strong>PROMITENTE VENDEDORA</strong>, 
-                        <strong>IADATA LTDA (Nome Fantasia: IATEK ME)</strong>, inscrita no CNPJ sob o n� 44.921.307/0001-91, 
-                        Sociedade Empres�ria Limitada, com sede na Rua Concei��o Cipriano Tavares, n� 30, Bairro Parque das Ac�cias, 
-                        Conselheiro Lafaiete - MG, CEP: 36.407-078, telefone: (16) 98121-1082, e-mail: veraguimaraessiqueira@hotmail.com, 
-                        e de outro lado, na qualidade de <strong>PROMISS�RIO COMPRADOR</strong>:
+                        <strong>IADATA LTDA (Nome Fantasia: IATEK ME)</strong>, inscrita no CNPJ sob o nº 44.921.307/0001-91, 
+                        Sociedade Empresária Limitada, com sede na Rua Conceição Cipriano Tavares, nº 30, Bairro Parque das Acácias, 
+                        Conselheiro Lafaiete – MG, CEP: 36.407-078, telefone: (16) 98121-1082, e-mail: veraguimaraessiqueira@hotmail.com, 
+                        e de outro lado, na qualidade de <strong>PROMISSÁRIO COMPRADOR</strong>:
                     </p>
 
                     <p>
                         <strong>${user.name}</strong>, brasileiro(a), ${profile.estadoCivil || '---'}, ${profile.profissao || '---'}, 
-                        portador(a) da C�dula de Identidade RG n� ${profile.rg || '---'} e inscrito(a) no CPF/MF sob o n� <strong>${user.cpf}</strong>, 
-                        residente e domiciliado(a) na ${profile.logradouro || '---'}, n� ${profile.numero || 's/n'}, 
+                        portador(a) da Cédula de Identidade RG nº ${profile.rg || '---'} e inscrito(a) no CPF/MF sob o nº <strong>${user.cpf}</strong>, 
+                        residente e domiciliado(a) na ${profile.logradouro || '---'}, nº ${profile.numero || 's/n'}, 
                         Bairro ${profile.bairro || '---'}, Cidade de ${profile.cidade || '---'}/${profile.uf || '--'}, CEP ${profile.cep || '---'}.
                     </p>
 
-                    <p>T�m entre si justo e contratado o presente instrumento particular, mediante as cl�usulas e condi��es seguintes:</p>
+                    <p>Têm entre si justo e contratado o presente instrumento particular, mediante as cláusulas e condições seguintes:</p>
 
-                    <span class="clause-title">Cl�usula Primeira - Do Objeto</span>
+                    <span class="clause-title">Cláusula Primeira – Do Objeto</span>
                     <p>
-                        A VENDEDORA � leg�tima propriet�ria e possuidora do im�vel denominado <strong>${user.lote_id || '---'}</strong>, 
-                        com �rea total de <strong>${lotDetails?.size || '---'}</strong>, devidamente aprovado pelos �rg�os competentes. 
+                        A VENDEDORA é legítima proprietária e possuidora do imóvel denominado <strong>${user.lote_id || '---'}</strong>, 
+                        com área total de <strong>${lotDetails?.size || '---'}</strong>, devidamente aprovado pelos órgãos competentes. 
                         A VENDEDORA promete vender e o COMPRADOR promete comprar o referido lote no estado em que se encontra.
                     </p>
 
-                    <span class="clause-title">Cl�usula Segunda - Do Pre�o e Condi��es de Pagamento</span>
+                    <span class="clause-title">Cláusula Segunda – Do Preço e Condições de Pagamento</span>
                     <p>
-                        O pre�o certo e ajustado para a presente Promessa de Compra e Venda � de 
+                        O preço certo e ajustado para a presente Promessa de Compra e Venda é de 
                         <strong>R$ ${Number(sim.totalPagoGeral || user.price || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>, 
                         a serem pagos pelo COMPRADOR da seguinte forma:
                     </p>
                     <ul>
                         <li><strong>Sinal/Entrada:</strong> R$ ${Number(sim.entrada || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}, pago na assinatura deste instrumento.</li>
-                        <li><strong>Saldo Restante:</strong> R$ ${Number((sim.totalPagoGeral || 0) - (sim.entrada || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2})}, pagos em ${user.total_parcelas || 120} parcelas mensais e sucessivas de R$ ${Number(sim.parcelaInicial || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})} sujeitas a corre��o monet�ria pr�-fixada anual de ${(sim.taxa * 100) || 6}% ou �ndices oficiais previstos em lei.</li>
+                        <li><strong>Saldo Restante:</strong> R$ ${Number((sim.totalPagoGeral || 0) - (sim.entrada || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2})}, pagos em ${user.total_parcelas || 120} parcelas mensais e sucessivas de R$ ${Number(sim.parcelaInicial || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})} sujeitas a correção monetária pré-fixada anual de ${(sim.taxa * 100) || 6}% ou índices oficiais previstos em lei.</li>
                     </ul>
 
-                    <span class="clause-title">Cl�usula Terceira - Corre��o e Inadimpl�ncia</span>
+                    <span class="clause-title">Cláusula Terceira – Correção e Inadimplência</span>
                     <p>
-                        O n�o pagamento pontual de qualquer parcela implicar� na incid�ncia de juros morat�rios de 1% (um por cento) ao m�s e multa compensat�ria de 2% (dois por cento) sobre o valor do d�bito atualizado. O atraso superior a 90 dias configura quebra de contrato sob o regime da Lei 9.514/97.
+                        O não pagamento pontual de qualquer parcela implicará na incidência de juros moratórios de 1% (um por cento) ao mês e multa compensatória de 2% (dois por cento) sobre o valor do débito atualizado. O atraso superior a 90 dias configura quebra de contrato sob o regime da Lei 9.514/97.
                     </p>
 
-                    <span class="clause-title">Cl�usula Quinta - Do Foro</span>
+                    <span class="clause-title">Cláusula Quinta – Do Foro</span>
                     <p>
-                        Para dirimir quaisquer quest�es decorrentes deste contrato, as partes elegem o foro da Comarca de domic�lio do Empreendimento, com ren�ncia expressa a qualquer outro.
+                        Para dirimir quaisquer questões decorrentes deste contrato, as partes elegem o foro da Comarca de domicílio do Empreendimento, com renúncia expressa a qualquer outro.
                     </p>
 
                     <p style="margin-top:40px;">Cidade da Sede, ${new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'})}.</p>
@@ -155,10 +155,10 @@ const ClientArea = () => {
     };
 
     const applyAccount = account => {
-        if (!account.lot) throw new Error('Seu cadastro ainda n�o possui lote vinculado. Consulte a administra��o.');
+        if (!account.lot) throw new Error('Seu cadastro ainda não possui lote vinculado. Consulte a administração.');
         setUserData(account.user);
         setUserLot(account.lot);
-        setPixKey(account.pixKey || 'Chave PIX n�o informada');
+        setPixKey(account.pixKey || 'Chave PIX não informada');
         setIsLoggedIn(true);
     };
     useEffect(() => { getAccount().then(applyAccount).catch(() => {}); }, []);
@@ -182,8 +182,8 @@ const ClientArea = () => {
                     {awaitingApproval ? (
                         <>
                             <i className="fas fa-hourglass-half" style={{ fontSize: '3rem', color: 'var(--color-sand)', marginBottom: '15px' }}></i>
-                            <h3 style={{ marginBottom: '10px' }}>Aprova��o Pendente</h3>
-                            <p style={{ color: '#666', fontSize: '0.9rem' }}>A administra��o j� recebeu sua solicita��o. Assim que seu cadastro for validado com o contrato, o acesso ser� liberado.</p>
+                            <h3 style={{ marginBottom: '10px' }}>Aprovação Pendente</h3>
+                            <p style={{ color: '#666', fontSize: '0.9rem' }}>A administração já recebeu sua solicitação. Assim que seu cadastro for validado com o contrato, o acesso será liberado.</p>
                             <button className="btn btn-secondary" style={{ width: '100%', marginTop: '20px' }} onClick={() => setAwaitingApproval(false)}>Voltar ao Login</button>
                         </>
                     ) : (
@@ -216,7 +216,7 @@ const ClientArea = () => {
             const baseParcela = sim.parcelaInicial || 0;
             const taxaAnual = sim.taxa || 0.06;
 
-            const toggleQuitar = () => alert("A confirma��o de pagamento � feita pela administra��o.");
+            const toggleQuitar = () => alert("A confirmação de pagamento é feita pela administração.");
 
             const gerarRecibo = (numParcela) => {
                 const printWindow = window.open('', '_blank');
@@ -225,13 +225,13 @@ const ClientArea = () => {
                     <style>body{font-family:sans-serif; padding:50px; line-height: 1.6;} .box{border:2px solid #ccc; padding:30px; border-radius:10px;}</style>
                     </head><body>
                         <div class="box">
-                            <h2 style="color: #2e7d32;">RECIBO DE QUITA��O - Reserva do Rio</h2>
+                            <h2 style="color: #2e7d32;">RECIBO DE QUITAÇÃO - Reserva do Rio</h2>
                             <p><strong>Lote / Unidade:</strong> ${userLot.id}</p>
                             <p><strong>Comprador:</strong> ${userLot.client} - CPF: ${userLot.clientCpf || cpf}</p>
                             <hr/>
-                            <p><strong>Referente � Parcela:</strong> ${numParcela} de ${total}</p>
+                            <p><strong>Referente à Parcela:</strong> ${numParcela} de ${total}</p>
                             <p><strong>Valor Quitado:</strong> ${valorParcelaBase.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                            <p><strong>Data de Emiss�o do Recibo:</strong> ${new Date().toLocaleDateString('pt-BR')} (Autom�tico pelo Sistema)</p>
+                            <p><strong>Data de Emissão do Recibo:</strong> ${new Date().toLocaleDateString('pt-BR')} (Automático pelo Sistema)</p>
                             <br/><br/><p style="text-align:center;">Assinatura Digital IADATA LTDA (IATEK ME)</p>
                         </div>
                         <script>window.print();</script>
@@ -253,7 +253,7 @@ const ClientArea = () => {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', background: '#fcfcfc', padding: '20px', borderRadius: '10px', border: '1px solid #eee' }}>
                             <div>
-                                <small style={{ color: '#666' }}>In�cio do Contrato</small>
+                                <small style={{ color: '#666' }}>Início do Contrato</small>
                                 <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{userLot.startDate || '10/04/2026'}</div>
                             </div>
                             <div>
@@ -273,7 +273,7 @@ const ClientArea = () => {
 
                     <div style={{ background: 'white', borderRadius: '15px', padding: '25px', boxShadow: 'var(--shadow)' }}>
                         <h3>Cronograma de Pagamentos</h3>
-                        <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px' }}>Efetue seus pagamentos via PIX abaixo e anexe o comprovante, e aguarde a confirma��o da administra��o.</p>
+                        <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px' }}>Efetue seus pagamentos via PIX abaixo e anexe o comprovante, e aguarde a confirmação da administração.</p>
                         
                         <div style={{ overflowX: 'auto' }}>
                             <table style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -281,7 +281,7 @@ const ClientArea = () => {
                                     <tr style={{ borderBottom: '2px solid #eee', color: '#666', background: '#f9f9f9' }}>
                                         <th style={{ padding: '15px', borderRadius: '10px 0 0 0' }}>Parcela</th>
                                         <th style={{ padding: '15px' }}>Valor (R$)</th>
-                                        <th style={{ padding: '15px' }}>Boleto (M�s)</th>
+                                        <th style={{ padding: '15px' }}>Boleto (Mês)</th>
                                         <th style={{ padding: '15px' }}>Seu Comprovante</th>
                                         <th style={{ padding: '15px' }}>Status</th>
                                         <th style={{ padding: '15px', borderRadius: '0 10px 0 0', textAlign: 'center' }}>Recibo (Final)</th>
@@ -306,8 +306,8 @@ const ClientArea = () => {
                                                 <td style={{ padding: '15px' }}>
                                                     {paymentData.boletoUrl ? (
                                                         paymentData.boletoUrl === '#' ? (
-                                                            <button onClick={() => alert("O arquivo do boleto est� salvo na Nuvem Segura e requer sincroniza��o extra nesta vers�o de testes local. Pe�a para atualizar pela central.")} style={{ background: 'none', border: 'none', color: 'var(--color-river)', fontWeight: 'bold', textDecoration: 'underline', cursor: 'pointer' }}>
-                                                                <i className="fas fa-barcode"></i> Boleto F�sico
+                                                            <button onClick={() => alert("O arquivo do boleto está salvo na Nuvem Segura e requer sincronização extra nesta versão de testes local. Peça para atualizar pela central.")} style={{ background: 'none', border: 'none', color: 'var(--color-river)', fontWeight: 'bold', textDecoration: 'underline', cursor: 'pointer' }}>
+                                                                <i className="fas fa-barcode"></i> Boleto Físico
                                                             </button>
                                                         ) : (
                                                             <a href={paymentData.boletoUrl} download={paymentData.boletoName || `Boleto_Parcela_${num}`} style={{ color: 'var(--color-river)', fontWeight: 'bold', textDecoration: 'none' }}>
@@ -347,7 +347,7 @@ const ClientArea = () => {
                                                     {isQuitado ? (
                                                         <span style={{ color: 'var(--color-forest)', fontWeight: 'bold' }}><i className="fas fa-check-double"></i> Quitado</span>
                                                     ) : paymentData.comprovanteUrl && paymentData.comprovanteUrl !== '#' ? (
-                                                        <span style={{ color: '#f57f17', fontWeight: 'bold' }}><i className="fas fa-hourglass-half"></i> Em Valida��o</span>
+                                                        <span style={{ color: '#f57f17', fontWeight: 'bold' }}><i className="fas fa-hourglass-half"></i> Em Validação</span>
                                                     ) : (
                                                         <span style={{ color: '#666', fontWeight: 'bold' }}>Aberto</span>
                                                     )}
@@ -393,7 +393,7 @@ const ClientArea = () => {
                         const uploaded = await uploadDataUrl(base64Result, file.name);
                         const data = await submitClientDocument(userLot.id, { name: fileName, url: uploaded.url });
                         if (data) setUserLot(data);
-                        alert('Upload de documento enviado � administra��o com sucesso!');
+                        alert('Upload de documento enviado à administração com sucesso!');
                     } catch(err) {
                         alert('Erro ao enviar documento.');
                     }
@@ -403,7 +403,7 @@ const ClientArea = () => {
             return (
                 <div style={{ background: 'white', borderRadius: '15px', padding: '25px', boxShadow: 'var(--shadow)' }}>
                     <h3 style={{ color: 'var(--color-dark)' }}>Documentos Oficiais</h3>
-                    <p style={{ color: '#666', marginBottom: '30px' }}>Arquivos anexados pela administra��o referentes ao lote <strong>{userLot.id}</strong>.</p>
+                    <p style={{ color: '#666', marginBottom: '30px' }}>Arquivos anexados pela administração referentes ao lote <strong>{userLot.id}</strong>.</p>
                     
                     <div style={{ display: 'grid', gap: '15px', marginBottom: '40px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px', background: '#f9f9f9', borderRadius: '10px', alignItems: 'center' }}>
@@ -411,7 +411,7 @@ const ClientArea = () => {
                             {adminDocs.contrato && adminDocs.contrato.url !== '#' ? (
                                 <a href={adminDocs.contrato.url} download={adminDocs.contrato.name} className="btn btn-primary" style={{ textDecoration: 'none' }}>Fazer Download</a>
                             ) : (
-                                <span style={{ color: '#999', fontSize: '0.9rem' }}>Ainda n�o disponibilizado</span>
+                                <span style={{ color: '#999', fontSize: '0.9rem' }}>Ainda não disponibilizado</span>
                             )}
                         </div>
                         
@@ -420,19 +420,19 @@ const ClientArea = () => {
                             {adminDocs.memorial && adminDocs.memorial.url !== '#' ? (
                                 <a href={adminDocs.memorial.url} download={adminDocs.memorial.name} className="btn btn-primary" style={{ textDecoration: 'none' }}>Fazer Download</a>
                             ) : (
-                                <span style={{ color: '#999', fontSize: '0.9rem' }}>Ainda n�o disponibilizado</span>
+                                <span style={{ color: '#999', fontSize: '0.9rem' }}>Ainda não disponibilizado</span>
                             )}
                         </div>
                     </div>
 
                     <div style={{ padding: '20px', border: '1px solid #eee', borderRadius: '10px', background: '#f0f4f8' }}>
-                        <h4 style={{ marginBottom: '15px', color: 'var(--color-river)' }}><i className="fas fa-cloud-upload-alt"></i> Enviar Arquivos para a Administra��o</h4>
-                        <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '15px' }}>Envie seus documentos de identifica��o, certid�es ou comprovantes avulsos para que o administrador aprove.</p>
+                        <h4 style={{ marginBottom: '15px', color: 'var(--color-river)' }}><i className="fas fa-cloud-upload-alt"></i> Enviar Arquivos para a Administração</h4>
+                        <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '15px' }}>Envie seus documentos de identificação, certidões ou comprovantes avulsos para que o administrador aprove.</p>
                         <input type="file" onChange={handleClientUpload} style={{ width: '100%', padding: '10px', background: 'white', border: '1px solid #ccc', borderRadius: '5px' }} />
                         
                         {(userLot.administrative_docs?.clientDocs && userLot.administrative_docs.clientDocs.length > 0) && (
                             <div style={{ marginTop: '20px' }}>
-                                <strong>Enviados por voc�:</strong>
+                                <strong>Enviados por você:</strong>
                                 <ul style={{ marginTop: '10px', paddingLeft: '20px', fontSize: '0.9rem' }}>
                                     {userLot.administrative_docs.clientDocs.map((doc, i) => (
                                         <li key={i} style={{ marginBottom: '5px' }}>
@@ -450,19 +450,19 @@ const ClientArea = () => {
         if (activeTab === 'obras') {
             return (
                 <div style={{ background: 'white', borderRadius: '15px', padding: '25px', boxShadow: 'var(--shadow)' }}>
-                    <h3>Evolu��o da Obra</h3>
+                    <h3>Evolução da Obra</h3>
                     <div style={{ background: '#eee', height: '300px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', backgroundImage: 'url(https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=800&q=80)', backgroundSize: 'cover' }}>
                         <i className="fas fa-play-circle" style={{ fontSize: '4rem', color: 'white', opacity: 0.8 }}></i>
                     </div>
                     <div style={{ borderLeft: '3px solid var(--color-forest)', paddingLeft: '20px' }}>
                         <div style={{ marginBottom: '20px' }}>
-                            <strong>Janeiro 2026:</strong> Terraplanagem Conclu�da.
+                            <strong>Janeiro 2026:</strong> Terraplanagem Concluída.
                         </div>
                         <div style={{ marginBottom: '20px' }}>
-                            <strong>Mar�o 2026:</strong> Demarca��o das Quadras.
+                            <strong>Março 2026:</strong> Demarcação das Quadras.
                         </div>
                         <div style={{ color: 'var(--color-river)', fontWeight: 'bold' }}>
-                            Fase Atual: Instala��o Hidr�ulica (60% Conclu�do).
+                            Fase Atual: Instalação Hidráulica (60% Concluído).
                         </div>
                     </div>
                 </div>
@@ -483,7 +483,7 @@ const ClientArea = () => {
                         <div style={{ width: '80px', height: '80px', background: 'var(--color-sand)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px', fontSize: '2rem' }}>
                             <i className="fas fa-user-circle"></i>
                         </div>
-                        <h4 style={{ margin: 0 }}>{userLot?.client || 'Propriet�rio'}</h4>
+                        <h4 style={{ margin: 0 }}>{userLot?.client || 'Proprietário'}</h4>
                         <span style={{ fontSize: '0.8rem', color: 'var(--color-forest)', fontWeight: 'bold' }}>{userLot?.id}</span>
                     </div>
 

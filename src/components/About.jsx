@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getConfig } from '../services/configService';
 
 export const defaultCopy = `🌿 **Um refúgio exclusivo com localização estratégica**
 
@@ -69,12 +70,10 @@ const About = () => {
     const [aboutText, setAboutText] = useState('');
 
     useEffect(() => {
-        const savedText = localStorage.getItem('db_about_text');
-        if (savedText) {
-            setAboutText(savedText);
-        } else {
-            setAboutText(defaultCopy);
-        }
+        setAboutText(defaultCopy);
+        getConfig('about_text').then(text => {
+            if (typeof text === 'string' && text.trim()) setAboutText(text);
+        }).catch(() => {});
     }, []);
 
     // Função simples para renderizar quebras de linha e negritos simples

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Header from '../components/SiteHeader';
 import Hero from '../components/HeroSection';
-import About from '../components/Overview';
+import About from '../components/About';
 import MapSection from '../components/LotExplorer';
 import GallerySection from '../components/MediaGallery';
 import Simulator from '../components/Simulator';

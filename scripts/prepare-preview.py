@@ -1,7 +1,7 @@
-"""Gera uma pr�via local de leitura a partir dos backups do Loteamento.
+"""Gera uma prévia local de leitura a partir dos backups do Loteamento.
 
 Uso: py -3.13 scripts/prepare-preview.py "E:\\Loteamento\\backup"
-Somente campos p�blicos s�o exportados. N�o exporta usu�rios, pagamentos ou PIX.
+Somente campos públicos são exportados. Não exporta usuários, pagamentos ou PIX.
 """
 import argparse
 import gzip
@@ -36,7 +36,7 @@ def main():
         data[match[1]] = [dict(zip(columns, map(decode, line.split('\t')))) for line in match[3].splitlines()]
     required = ['public.lots', 'public.map_mapped', 'public.gallery', 'public.config', 'storage.objects']
     if any(table not in data for table in required):
-        parser.error('O backup n�o possui todas as tabelas esperadas para o Loteamento.')
+        parser.error('O backup não possui todas as tabelas esperadas para o Loteamento.')
     root = Path(__file__).resolve().parents[1]
     output = root / '.preview-public' / 'preview'
     output.mkdir(parents=True, exist_ok=True)
@@ -56,7 +56,7 @@ def main():
                 relative = urllib.parse.unquote(path.split(marker, 1)[1])
                 matches = [name for name in names if name.endswith('/' + relative)]
                 if len(matches) != 1:
-                    raise ValueError('Arquivo de galeria ausente ou amb�guo no ZIP.')
+                    raise ValueError('Arquivo de galeria ausente ou ambíguo no ZIP.')
                 name = Path(relative).name
                 target = output / 'media' / name
                 target.parent.mkdir(exist_ok=True)
@@ -66,7 +66,7 @@ def main():
     snapshot = {'lots': lots, 'map': mapped, 'config': config, 'gallery': gallery}
     (output / 'data.json').write_text(json.dumps(snapshot, ensure_ascii=False), encoding='utf-8')
     shutil.copy2(root / 'public' / 'hero_river.png', root / '.preview-public' / 'hero_river.png')
-    print(f'Pr�via pronta: {len(lots)} lotes, {len(mapped)} marca��es e {len(gallery)} itens de galeria.')
+    print(f'Prévia pronta: {len(lots)} lotes, {len(mapped)} marcações e {len(gallery)} itens de galeria.')
 
 
 if __name__ == '__main__':

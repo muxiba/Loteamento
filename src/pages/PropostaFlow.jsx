@@ -8,7 +8,7 @@ const PropostaFlow = () => {
     const navigate = useNavigate();
     const location = useLocation();
     
-    // Obter o Lote pr�-selecionado (se houver) via state do Router
+    // Obter o Lote pré-selecionado (se houver) via state do Router
     const [selectedLotId, setSelectedLotId] = useState(location.state?.lotId || '');
     const [lotDetails, setLotDetails] = useState(null);
 
@@ -17,7 +17,7 @@ const PropostaFlow = () => {
     // Step management
     const [step, setStep] = useState(1);
     
-    // CONFIGURA��ES DO ADMIN
+    // CONFIGURAÇÕES DO ADMIN
     const [config, setConfig] = useState({
         taxaAnual: 0.06,
         entradaMinima: 8500,
@@ -57,7 +57,7 @@ const PropostaFlow = () => {
     const [senha, setSenha] = useState('');
     const [confirmarSenha, setConfirmarSenha] = useState('');
 
-    // SIMULA��O (Mesma l�gica do Simulator.jsx)
+    // SIMULAÇÃO (Mesma lógica do Simulator.jsx)
     const [entry, setEntry] = useState(0);
     const [months, setMonths] = useState(60);
     const [simResult, setSimResult] = useState(null);
@@ -93,7 +93,7 @@ const PropostaFlow = () => {
         const anos = Math.ceil(months / 12);
         const parcelaFinalEstimada = parcelaInicial * Math.pow(1 + config.taxaAnual, anos);
         
-        // C�lculo do total pago (reajuste ANUAL)
+        // Cálculo do total pago (reajuste ANUAL)
         let totalPagoParcelas = 0;
         let parcelaAtual = parcelaInicial;
         for (let i = 0; i < anos; i++) {
@@ -119,7 +119,7 @@ const PropostaFlow = () => {
 
     const renderStepSimulacao = () => (
         <div style={{ animation: 'fadeIn 0.5s' }}>
-            <h3 style={{ color: 'var(--color-forest)', marginBottom: '20px' }}>1. Simula��o de Pagamento e Lote</h3>
+            <h3 style={{ color: 'var(--color-forest)', marginBottom: '20px' }}>1. Simulação de Pagamento e Lote</h3>
             
             <label style={labelStyle}>Lote Desejado *</label>
             <select style={{...inputStyle, padding:'15px', fontSize:'1.1rem'}} value={selectedLotId} onChange={(e) => {
@@ -127,8 +127,8 @@ const PropostaFlow = () => {
                 setSimResult(null);
             }}>
                 <option value="">-- Selecione seu lote --</option>
-                {allLots.filter(l => l.status === 'Dispon�vel').map(l => (
-                    <option key={l.id} value={l.id}>{l.id} - �rea: {l.size} - R$ {l.price.toLocaleString('pt-BR')}</option>
+                {allLots.filter(l => l.status === 'Disponível').map(l => (
+                    <option key={l.id} value={l.id}>{l.id} - Área: {l.size} - R$ {l.price.toLocaleString('pt-BR')}</option>
                 ))}
             </select>
 
@@ -136,7 +136,7 @@ const PropostaFlow = () => {
                 <div style={{ background: '#f5f5f5', padding: '30px', borderRadius: '15px', marginTop: '20px', border: '1px solid #ddd' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 1.2fr', gap: '30px' }}>
                         <div>
-                            <h4 style={{marginBottom: '20px', color: 'var(--color-forest)'}}><i className="fas fa-sliders-h"></i> Ajuste as Condi��es</h4>
+                            <h4 style={{marginBottom: '20px', color: 'var(--color-forest)'}}><i className="fas fa-sliders-h"></i> Ajuste as Condições</h4>
                             
                             <div style={{ marginBottom: '20px' }}>
                                 <label style={{ ...labelStyle, display: 'flex', justifyContent: 'space-between' }}>
@@ -149,7 +149,7 @@ const PropostaFlow = () => {
                                     onChange={e => { setEntry(Number(e.target.value)); setSimResult(null); }} 
                                     style={{ width: '100%', height: '6px', background: '#ddd', borderRadius: '5px', outline: 'none', margin: '15px 0' }}
                                 />
-                                <small style={{ color: '#999' }}>M�nimo obrigat�rio: {config.entradaMinima.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</small>
+                                <small style={{ color: '#999' }}>Mínimo obrigatório: {config.entradaMinima.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</small>
                             </div>
                             
                             <div style={{ marginBottom: '25px' }}>
@@ -165,7 +165,7 @@ const PropostaFlow = () => {
                                 />
                             </div>
                             
-                            <button className="btn btn-primary" style={{width: '100%', padding: '15px', background: 'var(--color-forest)', color: 'white'}} onClick={calcularSimulacao}>Confirmar Simula��o Financeira</button>
+                            <button className="btn btn-primary" style={{width: '100%', padding: '15px', background: 'var(--color-forest)', color: 'white'}} onClick={calcularSimulacao}>Confirmar Simulação Financeira</button>
                         </div>
                         
                         <div style={{ background: 'var(--color-forest)', color: 'white', padding: '25px', borderRadius: '12px', position: 'relative', overflow: 'hidden' }}>
@@ -175,7 +175,7 @@ const PropostaFlow = () => {
                             <h4 style={{marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '10px'}}>Resumo da Proposta</h4>
                             {simResult ? (
                                 <div style={{ position: 'relative', zIndex: 1 }}>
-                                    <p style={{ opacity: 0.8, fontSize: '0.9rem' }}>Valor da 1� Parcela (Ano 1):</p>
+                                    <p style={{ opacity: 0.8, fontSize: '0.9rem' }}>Valor da 1ª Parcela (Ano 1):</p>
                                     <h2 style={{ fontSize: '2.5rem', margin: '5px 0 15px 0', fontFamily: 'serif' }}>{simResult.parcelaInicial.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</h2>
                                     
                                     <div style={{ background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px' }}>
@@ -184,11 +184,11 @@ const PropostaFlow = () => {
                                             <strong>{simResult.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
                                         </p>
                                         <p style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '8px' }}>
-                                            <span>Corre��o Anual:</span>
+                                            <span>Correção Anual:</span>
                                             <strong>{config.taxaAnual * 100}% a.a.</strong>
                                         </p>
                                         <p style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                                            <span>�ltima Parcela (Est.):</span>
+                                            <span>Última Parcela (Est.):</span>
                                             <strong>~{simResult.parcelaFinalEstimada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
                                         </p>
                                     </div>
@@ -210,7 +210,7 @@ const PropostaFlow = () => {
             )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '30px' }}>
-                <button className="btn btn-primary" disabled={!simResult} onClick={() => setStep(2)}>Avan�ar para Seus Dados <i className="fas fa-arrow-right"></i></button>
+                <button className="btn btn-primary" disabled={!simResult} onClick={() => setStep(2)}>Avançar para Seus Dados <i className="fas fa-arrow-right"></i></button>
             </div>
         </div>
     );
@@ -227,43 +227,43 @@ const PropostaFlow = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '15px' }}>
                 <div><label style={labelStyle}>RG</label><input name="rg" value={formData.rg} onChange={handleInputChange} style={inputStyle} type="text" /></div>
-                <div><label style={labelStyle}>�rg�o Emissor</label><input name="orgaoEmissor" value={formData.orgaoEmissor} onChange={handleInputChange} style={inputStyle} type="text" placeholder="SSP/SP"/></div>
+                <div><label style={labelStyle}>Órgão Emissor</label><input name="orgaoEmissor" value={formData.orgaoEmissor} onChange={handleInputChange} style={inputStyle} type="text" placeholder="SSP/SP"/></div>
                 <div>
                     <label style={labelStyle}>Estado Civil</label>
                     <select name="estadoCivil" value={formData.estadoCivil} onChange={handleInputChange} style={inputStyle}>
                         <option value="Solteiro(a)">Solteiro(a)</option>
                         <option value="Casado(a)">Casado(a)</option>
                         <option value="Divorciado(a)">Divorciado(a)</option>
-                        <option value="Vi�vo(a)">Vi�vo(a)</option>
+                        <option value="Viúvo(a)">Viúvo(a)</option>
                     </select>
                 </div>
-                <div><label style={labelStyle}>Profiss�o</label><input name="profissao" value={formData.profissao} onChange={handleInputChange} style={inputStyle} type="text" /></div>
+                <div><label style={labelStyle}>Profissão</label><input name="profissao" value={formData.profissao} onChange={handleInputChange} style={inputStyle} type="text" /></div>
             </div>
 
             {formData.estadoCivil === 'Casado(a)' && (
                 <div style={{ background: '#f5f5f5', padding: '15px', borderRadius: '5px', marginBottom: '20px', borderLeft: '4px solid var(--color-river)' }}>
-                    <h4 style={{marginBottom: '10px', color: 'var(--color-dark)'}}>Composi��o de C�njuge</h4>
+                    <h4 style={{marginBottom: '10px', color: 'var(--color-dark)'}}>Composição de Cônjuge</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '15px' }}>
-                        <div><label style={labelStyle}>Nome do C�njuge</label><input name="conjugeNome" value={formData.conjugeNome} onChange={handleInputChange} style={inputStyle} type="text" /></div>
-                        <div><label style={labelStyle}>CPF do C�njuge</label><input name="conjugeCpf" value={formData.conjugeCpf} onChange={handleInputChange} style={inputStyle} type="text" /></div>
+                        <div><label style={labelStyle}>Nome do Cônjuge</label><input name="conjugeNome" value={formData.conjugeNome} onChange={handleInputChange} style={inputStyle} type="text" /></div>
+                        <div><label style={labelStyle}>CPF do Cônjuge</label><input name="conjugeCpf" value={formData.conjugeCpf} onChange={handleInputChange} style={inputStyle} type="text" /></div>
                         <div>
                             <label style={labelStyle}>Regime de Bens</label>
                             <select name="regimeBens" value={formData.regimeBens} onChange={handleInputChange} style={inputStyle}>
                                 <option value="">Selecione...</option>
-                                <option value="Comunh�o Parcial">Comunh�o Parcial</option>
-                                <option value="Comunh�o Universal">Comunh�o Universal</option>
-                                <option value="Separa��o Total">Separa��o Total</option>
+                                <option value="Comunhão Parcial">Comunhão Parcial</option>
+                                <option value="Comunhão Universal">Comunhão Universal</option>
+                                <option value="Separação Total">Separação Total</option>
                             </select>
                         </div>
                     </div>
                 </div>
             )}
 
-            <h3 style={{ color: 'var(--color-forest)', margin: '30px 0 20px 0' }}>Endere�o e Contato</h3>
+            <h3 style={{ color: 'var(--color-forest)', margin: '30px 0 20px 0' }}>Endereço e Contato</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr 1fr 1fr', gap: '15px' }}>
                 <div><label style={labelStyle}>CEP</label><input name="cep" value={formData.cep} onChange={handleInputChange} style={inputStyle} type="text" /></div>
                 <div><label style={labelStyle}>Logradouro</label><input name="logradouro" value={formData.logradouro} onChange={handleInputChange} style={inputStyle} type="text" /></div>
-                <div><label style={labelStyle}>N�mero</label><input name="numero" value={formData.numero} onChange={handleInputChange} style={inputStyle} type="text" /></div>
+                <div><label style={labelStyle}>Número</label><input name="numero" value={formData.numero} onChange={handleInputChange} style={inputStyle} type="text" /></div>
                 <div><label style={labelStyle}>Complemento</label><input name="complemento" value={formData.complemento} onChange={handleInputChange} style={inputStyle} type="text" /></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '15px' }}>
@@ -291,15 +291,15 @@ const PropostaFlow = () => {
         return (
             <div style={{ animation: 'fadeIn 0.5s' }}>
                 <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h3 style={{ color: 'var(--color-forest)' }}>3. Gera��o Autom�tica de Contrato</h3>
+                    <h3 style={{ color: 'var(--color-forest)' }}>3. Geração Automática de Contrato</h3>
                     <div>
-                        <button className="btn btn-secondary" style={{ marginRight: '10px' }} onClick={() => setStep(2)}>Voltar Edi��o</button>
+                        <button className="btn btn-secondary" style={{ marginRight: '10px' }} onClick={() => setStep(2)}>Voltar Edição</button>
                         <button className="btn btn-primary" onClick={() => window.print()}><i className="fas fa-print"></i> Imprimir/Salvar PDF</button>
                     </div>
                 </div>
 
                 <div className="no-print" style={{ background: '#fff3cd', color: '#856404', padding: '15px', borderRadius: '5px', marginBottom: '20px', fontSize: '0.9rem' }}>
-                    <strong>Aten��o:</strong> Revise os termos antes de gerar o PDF. Ao clicar em Imprimir, esta tela ser� formatada nos padr�es de Margem e Fonte exigidos por Cart�rios (Times New Roman 12, justificado).
+                    <strong>Atenção:</strong> Revise os termos antes de gerar o PDF. Ao clicar em Imprimir, esta tela será formatada nos padrões de Margem e Fonte exigidos por Cartórios (Times New Roman 12, justificado).
                 </div>
 
                 {/* AREA PDF CARTORIO */}
@@ -308,46 +308,46 @@ const PropostaFlow = () => {
                     fontFamily: '"Times New Roman", Times, serif', fontSize: '12pt', lineHeight: 1.5,
                     textAlign: 'justify', color: 'black'
                 }}>
-                    <h2 style={{ textAlign: 'center', textTransform: 'uppercase', marginBottom: '30px', fontWeight: 'bold' }}>CONTRATO PARTICULAR DE PROMESSA DE COMPRA E VENDA DE IM�VEL<br/>(ALIENA��O FIDUCI�RIA)</h2>
+                    <h2 style={{ textAlign: 'center', textTransform: 'uppercase', marginBottom: '30px', fontWeight: 'bold' }}>CONTRATO PARTICULAR DE PROMESSA DE COMPRA E VENDA DE IMÓVEL<br/>(ALIENAÇÃO FIDUCIÁRIA)</h2>
                     
                     <p>
-                        Pelo presente instrumento particular, de um lado, na qualidade de <strong>PROMITENTE VENDEDORA</strong>, <strong>IADATA LTDA</strong> (Nome Fantasia: IATEK ME), inscrita no CNPJ sob o n� 44.921.307/0001-91, Sociedade Empres�ria Limitada, com sede na Rua Concei��o Cipriano Tavares, n� 30, Bairro Parque das Ac�cias, Conselheiro Lafaiete - MG, CEP: 36.407-078, telefone: (16) 98121-1082, e-mail: veraguimaraessiqueira@hotmail.com, e de outro lado, na qualidade de <strong>PROMISS�RIO COMPRADOR</strong>:
+                        Pelo presente instrumento particular, de um lado, na qualidade de <strong>PROMITENTE VENDEDORA</strong>, <strong>IADATA LTDA</strong> (Nome Fantasia: IATEK ME), inscrita no CNPJ sob o nº 44.921.307/0001-91, Sociedade Empresária Limitada, com sede na Rua Conceição Cipriano Tavares, nº 30, Bairro Parque das Acácias, Conselheiro Lafaiete – MG, CEP: 36.407-078, telefone: (16) 98121-1082, e-mail: veraguimaraessiqueira@hotmail.com, e de outro lado, na qualidade de <strong>PROMISSÁRIO COMPRADOR</strong>:
                     </p>
 
                     <p style={{ marginLeft: '40px' }}>
-                        <strong>{formData.nome || 'NOME DO COMPRADOR'}</strong>, brasileiro(a), {formData.estadoCivil || 'ESTADO CIVIL'}, {formData.profissao || 'PROFISS�O'}, portador(a) da C�dula de Identidade RG n� {formData.rg || 'XX'} SSP/{formData.orgaoEmissor || 'XX'} e inscrito(a) no CPF/MF sob o n� {formData.cpf || 'XX'}, residente e domiciliado(a) na {formData.logradouro || 'ENDERE�O COMPLETO'}, n� {formData.numero}, Bairro {formData.bairro}, Cidade de {formData.cidade}/{formData.uf}, CEP {formData.cep}.
+                        <strong>{formData.nome || 'NOME DO COMPRADOR'}</strong>, brasileiro(a), {formData.estadoCivil || 'ESTADO CIVIL'}, {formData.profissao || 'PROFISSÃO'}, portador(a) da Cédula de Identidade RG nº {formData.rg || 'XX'} SSP/{formData.orgaoEmissor || 'XX'} e inscrito(a) no CPF/MF sob o nº {formData.cpf || 'XX'}, residente e domiciliado(a) na {formData.logradouro || 'ENDEREÇO COMPLETO'}, nº {formData.numero}, Bairro {formData.bairro}, Cidade de {formData.cidade}/{formData.uf}, CEP {formData.cep}.
                         {formData.estadoCivil === 'Casado(a)' && ` Casado sob o regime de ${formData.regimeBens} com ${formData.conjugeNome}, CPF ${formData.conjugeCpf}.`}
                     </p>
 
-                    <p>T�m entre si justo e contratado o presente instrumento particular, mediante as cl�usulas e condi��es seguintes:</p>
+                    <p>Têm entre si justo e contratado o presente instrumento particular, mediante as cláusulas e condições seguintes:</p>
 
-                    <h4 style={{ textTransform: 'uppercase', marginTop: '20px', textDecoration: 'underline' }}>Cl�usula Primeira - Do Objeto</h4>
+                    <h4 style={{ textTransform: 'uppercase', marginTop: '20px', textDecoration: 'underline' }}>Cláusula Primeira – Do Objeto</h4>
                     <p>
-                        A VENDEDORA � leg�tima propriet�ria e possuidora do im�vel denominado <strong>{lotDetails?.id || 'LOTE XX'}</strong>, com �rea total de <strong>{lotDetails?.size || 'XX m�'}</strong>, devidamente aprovado pelos �rg�os competentes. A VENDEDORA promete vender e o COMPRADOR promete comprar o referido lote no estado em que se encontra.
+                        A VENDEDORA é legítima proprietária e possuidora do imóvel denominado <strong>{lotDetails?.id || 'LOTE XX'}</strong>, com área total de <strong>{lotDetails?.size || 'XX m²'}</strong>, devidamente aprovado pelos órgãos competentes. A VENDEDORA promete vender e o COMPRADOR promete comprar o referido lote no estado em que se encontra.
                     </p>
 
-                    <h4 style={{ textTransform: 'uppercase', marginTop: '20px', textDecoration: 'underline' }}>Cl�usula Segunda - Do Pre�o e Condi��es de Pagamento</h4>
+                    <h4 style={{ textTransform: 'uppercase', marginTop: '20px', textDecoration: 'underline' }}>Cláusula Segunda – Do Preço e Condições de Pagamento</h4>
                     <p>
-                        O pre�o certo e ajustado para a presente Promessa de Compra e Venda � de <strong>R$ {lotDetails?.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</strong>, a serem pagos pelo COMPRADOR da seguinte forma:
+                        O preço certo e ajustado para a presente Promessa de Compra e Venda é de <strong>R$ {lotDetails?.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</strong>, a serem pagos pelo COMPRADOR da seguinte forma:
                     </p>
                     <ul style={{ listStyleType: 'lower-alpha' }}>
                         <li><strong>Sinal/Entrada:</strong> {entry.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}, pago na assinatura deste instrumento.</li>
-                        <li><strong>Saldo Restante:</strong> {simResult?.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}, pagos em <strong>{months || 'XX'} parcelas mensais e sucessivas</strong> de <strong>{simResult?.parcelaInicial.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong> sujeitas a corre��o monet�ria pr�-fixada anual de {config.taxaAnual * 100}% ou �ndices oficiais previstos em lei.</li>
+                        <li><strong>Saldo Restante:</strong> {simResult?.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}, pagos em <strong>{months || 'XX'} parcelas mensais e sucessivas</strong> de <strong>{simResult?.parcelaInicial.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong> sujeitas a correção monetária pré-fixada anual de {config.taxaAnual * 100}% ou índices oficiais previstos em lei.</li>
                     </ul>
 
-                    <h4 style={{ textTransform: 'uppercase', marginTop: '20px', textDecoration: 'underline' }}>Cl�usula Terceira - Corre��o e Inadimpl�ncia</h4>
+                    <h4 style={{ textTransform: 'uppercase', marginTop: '20px', textDecoration: 'underline' }}>Cláusula Terceira – Correção e Inadimplência</h4>
                     <p>
-                        O n�o pagamento pontual de qualquer parcela implicar� na incid�ncia de juros morat�rios de 1% (um por cento) ao m�s e multa compensat�ria de 2% (dois por cento) sobre o valor do d�bito atualizado. O atraso superior a 90 dias configura quebra de contrato sob o regime da Lei 9.514/97.
+                        O não pagamento pontual de qualquer parcela implicará na incidência de juros moratórios de 1% (um por cento) ao mês e multa compensatória de 2% (dois por cento) sobre o valor do débito atualizado. O atraso superior a 90 dias configura quebra de contrato sob o regime da Lei 9.514/97.
                     </p>
 
-                    <h4 style={{ textTransform: 'uppercase', marginTop: '20px', textDecoration: 'underline' }}>Cl�usula Quarta - Da Posse e Transfer�ncia</h4>
+                    <h4 style={{ textTransform: 'uppercase', marginTop: '20px', textDecoration: 'underline' }}>Cláusula Quarta – Da Posse e Transferência</h4>
                     <p>
-                        O COMPRADOR ser� imitido na posse prec�ria do im�vel, assumindo a partir desta data todos os impostos (IPTU), taxas e obriga��es incidentes sobre o lote. A Escritura P�blica definitiva ser� outorgada somente ap�s a quita��o integral do saldo devedor.
+                        O COMPRADOR será imitido na posse precária do imóvel, assumindo a partir desta data todos os impostos (IPTU), taxas e obrigações incidentes sobre o lote. A Escritura Pública definitiva será outorgada somente após a quitação integral do saldo devedor.
                     </p>
 
-                    <h4 style={{ textTransform: 'uppercase', marginTop: '20px', textDecoration: 'underline' }}>Cl�usula Quinta - Do Foro</h4>
+                    <h4 style={{ textTransform: 'uppercase', marginTop: '20px', textDecoration: 'underline' }}>Cláusula Quinta – Do Foro</h4>
                     <p>
-                        Para dirimir quaisquer quest�es decorrentes deste contrato, as partes elegem o foro da Comarca de domic�lio do Empreendimento, com ren�ncia expressa a qualquer outro.
+                        Para dirimir quaisquer questões decorrentes deste contrato, as partes elegem o foro da Comarca de domicílio do Empreendimento, com renúncia expressa a qualquer outro.
                     </p>
                     
                     <br/><br/>
@@ -362,7 +362,7 @@ const PropostaFlow = () => {
                         </div>
                         <div>
                             <hr style={{borderTop: '1px solid black'}}/>
-                            <p><strong>{formData.nome || 'PROMISS�RIO COMPRADOR'}</strong><br/>CPF: {formData.cpf}</p>
+                            <p><strong>{formData.nome || 'PROMISSÁRIO COMPRADOR'}</strong><br/>CPF: {formData.cpf}</p>
                         </div>
                     </div>
                 </div>
@@ -377,7 +377,7 @@ const PropostaFlow = () => {
     const renderStepFinalizacao = () => {
         const handleFinalSubmit = async () => {
             if(senha !== confirmarSenha || senha.length < 8) {
-                return alert("As senhas n�o conferem ou s�o muito curtas!");
+                return alert("As senhas não conferem ou são muito curtas!");
             }
 
             try {
@@ -396,23 +396,23 @@ const PropostaFlow = () => {
                 
                 await createPendingUser(userData);
 
-                alert('Proposta ENVIADA COM SUCESSO! Voc� receber� a confirma��o em breve.');
+                alert('Proposta ENVIADA COM SUCESSO! Você receberá a confirmação em breve.');
                 navigate('/cliente');
             } catch (err) {
-                alert("Erro ao enviar proposta. Verifique se o CPF j� est� cadastrado.");
+                alert("Erro ao enviar proposta. Verifique se o CPF já está cadastrado.");
             }
         };
 
         return (
             <div style={{ animation: 'fadeIn 0.5s' }}>
-                <h3 style={{ color: 'var(--color-forest)', marginBottom: '20px' }}>4. Cria��o de Acesso Cliente e Envio</h3>
-                <p style={{ color: '#666', marginBottom: '30px' }}>A proposta de compra do lote <strong>{lotDetails?.id}</strong> est� pronta! Crie uma senha abaixo para acompanhar sua aprova��o.</p>
+                <h3 style={{ color: 'var(--color-forest)', marginBottom: '20px' }}>4. Criação de Acesso Cliente e Envio</h3>
+                <p style={{ color: '#666', marginBottom: '30px' }}>A proposta de compra do lote <strong>{lotDetails?.id}</strong> está pronta! Crie uma senha abaixo para acompanhar sua aprovação.</p>
 
                 <div style={{ background: '#f5f5f5', padding: '30px', borderRadius: '10px', maxWidth: '600px', margin: '0 auto' }}>
                     <div style={{ background: '#fff3cd', color: '#856404', padding: '15px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.9rem' }}>
-                        <i className="fas fa-exclamation-triangle"></i> <strong>Aten��o �s Comunica��es Oficiais:</strong><br/>
-                        A aprova��o final e os pr�ximos passos ser�o enviados para o seu e-mail (<strong>{formData.email || 'N�o informado'}</strong>).<br/>
-                        Voc� tamb�m receber� no seu WhatsApp (<strong>{formData.telefone || 'N�o informado'}</strong>) o convite formal para o Grupo do Loteamento Oficial ao ser aprovado!
+                        <i className="fas fa-exclamation-triangle"></i> <strong>Atenção às Comunicações Oficiais:</strong><br/>
+                        A aprovação final e os próximos passos serão enviados para o seu e-mail (<strong>{formData.email || 'Não informado'}</strong>).<br/>
+                        Você também receberá no seu WhatsApp (<strong>{formData.telefone || 'Não informado'}</strong>) o convite formal para o Grupo do Loteamento Oficial ao ser aprovado!
                     </div>
 
                     <h4 style={{ marginBottom: '20px', textAlign: 'center' }}><i className="fas fa-lock"></i> Credenciais de Acesso</h4>
@@ -421,7 +421,7 @@ const PropostaFlow = () => {
                     <input disabled value={formData.cpf || 'Preencha no Passo 1'} style={{...inputStyle, background: '#eee'}} type="text" />
 
                     <label style={labelStyle}>Crie uma Senha *</label>
-                    <input value={senha} onChange={e => setSenha(e.target.value)} style={inputStyle} type="password" placeholder="M�nimo 8 caracteres" />
+                    <input value={senha} onChange={e => setSenha(e.target.value)} style={inputStyle} type="password" placeholder="Mínimo 8 caracteres" />
 
                     <label style={labelStyle}>Confirme a Senha *</label>
                     <input value={confirmarSenha} onChange={e => setConfirmarSenha(e.target.value)} style={inputStyle} type="password" />
@@ -450,7 +450,7 @@ const PropostaFlow = () => {
                             Revisar Contrato
                         </button>
                         <button className="btn btn-secondary" onClick={() => navigate('/')} style={{ flex: 1, borderColor: '#ccc', color: '#666' }}>
-                            <i className="fas fa-home"></i> Cancelar e Voltar � Tela Principal
+                            <i className="fas fa-home"></i> Cancelar e Voltar à Tela Principal
                         </button>
                     </div>
                 </div>
@@ -496,7 +496,7 @@ const PropostaFlow = () => {
                 </div>
             </div>
 
-            {/* Injetando estilos de impress�o diretamente aqui no componente */}
+            {/* Injetando estilos de impressão diretamente aqui no componente */}
             <style>{`
                 @media print {
                     .no-print { display: none !important; }

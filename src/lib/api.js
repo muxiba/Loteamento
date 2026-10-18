@@ -1,7 +1,7 @@
 export async function api(path, options={}) {
  const response=await fetch('/api/'+path,{credentials:'same-origin',...options,headers:{'Content-Type':'application/json',...options.headers},body:options.body===undefined?undefined:JSON.stringify(options.body)});
- const data=await response.json().catch(()=>({error:'Resposta inv�lida do servidor.'}));
- if(!response.ok)throw new Error(data.error || 'N�o foi poss�vel concluir a opera��o.');
+ const data=await response.json().catch(()=>({error:'Resposta inválida do servidor.'}));
+ if(!response.ok)throw new Error(data.error || 'Não foi possível concluir a operação.');
  return data;
 }
 export const loginAccount=(type,login,password)=>api('auth/login',{method:'POST',body:{type,login,password}});

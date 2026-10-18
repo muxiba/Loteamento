@@ -21,15 +21,15 @@ export function sessionCookie(token, secure, maxAge=28800) { return 'rr_session=
 export function getToken(req) { return (req.headers.cookie || '').split(';').map(x=>x.trim()).find(x=>x.startsWith('rr_session='))?.slice(11) || ''; }
 export function checkOrigin(req) {
  const origin=req.headers.origin;
- if (req.headers['sec-fetch-site']==='cross-site') throw new HttpError(403,'Origem n�o autorizada.');
+ if (req.headers['sec-fetch-site']==='cross-site') throw new HttpError(403,'Origem não autorizada.');
  if (origin) {
-  let url; try {url=new URL(origin);} catch {throw new HttpError(403,'Origem inv�lida.');}
-  if (url.host!==req.headers.host || !['http:','https:'].includes(url.protocol)) throw new HttpError(403,'Origem n�o autorizada.');
+  let url; try {url=new URL(origin);} catch {throw new HttpError(403,'Origem inválida.');}
+  if (url.host!==req.headers.host || !['http:','https:'].includes(url.protocol)) throw new HttpError(403,'Origem não autorizada.');
  }
  if (!String(req.headers['content-type'] || '').startsWith('application/json')) throw new HttpError(415,'Envie JSON.');
 }
 export function publicUser(row) { if (!row) return null; const {password,password_hash,...safe}=row; return safe; }
 export const newToken = () => randomBytes(32).toString('hex');
-export function assertAdmin(actor) { if (actor?.role!=='admin') throw new HttpError(actor?403:401,'Acesso restrito � administra��o.'); }
-export function assertClient(actor, lotId) { if (!actor || (actor.role!=='admin' && (actor.user.status!=='approved' || actor.user.lote_id!==lotId))) throw new HttpError(actor?403:401,'Acesso n�o autorizado a este lote.'); }
-export function safeText(value, max=500) { if (typeof value!=='string' || value.length>max || /[<>\u0000]/.test(value)) throw new HttpError(400,'Texto inv�lido.'); return value.trim(); }
+export function assertAdmin(actor) { if (actor?.role!=='admin') throw new HttpError(actor?403:401,'Acesso restrito à administração.'); }
+export function assertClient(actor, lotId) { if (!actor || (actor.role!=='admin' && (actor.user.status!=='approved' || actor.user.lote_id!==lotId))) throw new HttpError(actor?403:401,'Acesso não autorizado a este lote.'); }
+export function safeText(value, max=500) { if (typeof value!=='string' || value.length>max || /[<>\u0000]/.test(value)) throw new HttpError(400,'Texto inválido.'); return value.trim(); }

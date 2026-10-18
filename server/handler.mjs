@@ -5,40 +5,40 @@ import {presignUpload,completeUpload,fileDownload,assertOwnedFile} from './stora
 const lotFields=new Set(['id','size','price','status','desc','client','client_cpf','payments','administrative_docs','paymentStatus','parcelasPagas','totalParcelas']);
 const publicConfig=new Set(['sim_config','brokers_list','map_custom_url','about_text']);
 const quote=value=>'"'+value+'"';
-const idOf=value=>{if(!/^[a-f0-9-]{36}$/.test(String(value)))throw new HttpError(400,'Identificador inv�lido.');return value;};
+const idOf=value=>{if(!/^[a-f0-9-]{36}$/.test(String(value)))throw new HttpError(400,'Identificador inválido.');return value;};
 function validateLot(body,create=false) {
  const result={};
  for(const [key,value] of Object.entries(body)) {if(lotFields.has(key) && value!==undefined)result[key]=value;}
  if(!create)delete result.id;
  if(create)result.id=safeText(String(body.id || ''),80);
  if(create && !result.id)throw new HttpError(400,'Informe o lote.');
- if(result.price!==undefined && (!Number.isFinite(Number(result.price)) || Number(result.price)<0))throw new HttpError(400,'Valor do lote inv�lido.');
- if(result.status!==undefined && !['Dispon�vel','Reservado','Vendido'].includes(result.status))throw new HttpError(400,'Status inv�lido.');
- for(const k of ['parcelasPagas','totalParcelas'])if(result[k]!==undefined && (!Number.isInteger(Number(result[k])) || Number(result[k])<0 || Number(result[k])>600))throw new HttpError(400,'Quantidade de parcelas inv�lida.');
+ if(result.price!==undefined && (!Number.isFinite(Number(result.price)) || Number(result.price)<0))throw new HttpError(400,'Valor do lote inválido.');
+ if(result.status!==undefined && !['Disponível','Reservado','Vendido'].includes(result.status))throw new HttpError(400,'Status inválido.');
+ for(const k of ['parcelasPagas','totalParcelas'])if(result[k]!==undefined && (!Number.isInteger(Number(result[k])) || Number(result[k])<0 || Number(result[k])>600))throw new HttpError(400,'Quantidade de parcelas inválida.');
  return result;
 }
 async function updateLot(id,changes,client={query}) {
- if(!Object.keys(changes).length)throw new HttpError(400,'Nenhuma altera��o informada.');
+ if(!Object.keys(changes).length)throw new HttpError(400,'Nenhuma alteração informada.');
  const values=Object.values(changes).map((v,i)=>['payments','administrative_docs'].includes(Object.keys(changes)[i])?JSON.stringify(v):v);
  const setters=Object.keys(changes).map((key,i)=>quote(key)+'=$'+(i+1)).join(',');
  const {rows}=await client.query('UPDATE lots SET '+setters+',updated_at=now() WHERE id=$'+(values.length+1)+' RETURNING *',[...values,id]);
- if(!rows[0])throw new HttpError(404,'Lote n�o encontrado.');return rows[0];
+ if(!rows[0])throw new HttpError(404,'Lote não encontrado.');return rows[0];
 }
 async function register(req,body) {
  await rateLimit(req,'register',5);
  const cpf=normalizeCpf(body.cpf),name=safeText(body.name,150);
  if(cpf.length!==11 || !name)throw new HttpError(400,'Informe nome e CPF completos.');
- if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email || '')))throw new HttpError(400,'Informe um e-mail v�lido.');
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email || '')))throw new HttpError(400,'Informe um e-mail válido.');
  const password=await hashPassword(body.password);
  const lotId=safeText(String(body.lote_id || ''),80);
  return transaction(async client=>{
   const {rows}=await client.query('SELECT id,price,status FROM lots WHERE id=$1 FOR UPDATE',[lotId]);
-  const lot=rows[0];if(!lot || lot.status!=='Dispon�vel')throw new HttpError(409,'O lote n�o est� dispon�vel para proposta.');
+  const lot=rows[0];if(!lot || lot.status!=='Disponível')throw new HttpError(409,'O lote não está disponível para proposta.');
   const saved=await client.query("SELECT value FROM config WHERE key='sim_config'");
   const config=saved.rows[0]?.value;
-  if(!config)throw new HttpError(503,'Condi��es de pagamento indispon�veis.');
+  if(!config)throw new HttpError(503,'Condições de pagamento indisponíveis.');
   const months=Number(body.total_parcelas),entry=Number(body.simulation?.entrada),price=Number(lot.price);
-  if(!Number.isInteger(months)||months<12||months>Number(config.maxParcelas)||!Number.isFinite(entry)||entry<Number(config.entradaMinima)||entry>=price)throw new HttpError(400,'Entrada ou prazo fora das condi��es de pagamento.');
+  if(!Number.isInteger(months)||months<12||months>Number(config.maxParcelas)||!Number.isFinite(entry)||entry<Number(config.entradaMinima)||entry>=price)throw new HttpError(400,'Entrada ou prazo fora das condições de pagamento.');
   const rate=Number(config.taxaAnual),initial=(price-entry)/months,years=Math.ceil(months/12);
   let sum=0;for(let month=0;month<months;month++)sum+=initial*Math.pow(1+rate,Math.floor(month/12));
   const simulation={entrada:entry,saldo:price-entry,parcelaInicial:initial,parcelaFinalEstimada:initial*Math.pow(1+rate,Math.max(0,years-1)),totalPagoGeral:entry+sum,anos:years,taxa:rate,basePrice:price};
@@ -74,12 +74,12 @@ async function route(req,res,path,body) {
   const id=path[1];
   if(method==='POST' && path[2]==='proof') {
    assertClient(actor,id);const index=Number(body.index);
-   if(!Number.isInteger(index)||index<0||index>600)throw new HttpError(400,'Parcela inv�lida.');
+   if(!Number.isInteger(index)||index<0||index>600)throw new HttpError(400,'Parcela inválida.');
    await assertOwnedFile(actor,body.url);
    return transaction(async client=>{
-    const {rows}=await client.query('SELECT * FROM lots WHERE id=$1 FOR UPDATE',[id]);const lot=rows[0];if(!lot)throw new HttpError(404,'Lote n�o encontrado.');
-    const payments=[...(lot.payments || [])];if(index>=Number(lot.totalParcelas || 120))throw new HttpError(400,'Parcela inv�lida.');
-    if(payments[index]?.quitado)throw new HttpError(409,'Esta parcela j� est� quitada.');
+    const {rows}=await client.query('SELECT * FROM lots WHERE id=$1 FOR UPDATE',[id]);const lot=rows[0];if(!lot)throw new HttpError(404,'Lote não encontrado.');
+    const payments=[...(lot.payments || [])];if(index>=Number(lot.totalParcelas || 120))throw new HttpError(400,'Parcela inválida.');
+    if(payments[index]?.quitado)throw new HttpError(409,'Esta parcela já está quitada.');
     while(payments.length<=index)payments.push({});
     payments[index]={...payments[index],comprovanteUrl:body.url,comprovanteName:safeText(String(body.name || 'Comprovante'),240)};
     return updateLot(id,{payments},client);
@@ -88,7 +88,7 @@ async function route(req,res,path,body) {
   if(method==='POST' && path[2]==='documents') {
    assertClient(actor,id);await assertOwnedFile(actor,body.url);
    return transaction(async client=>{
-    const {rows}=await client.query('SELECT administrative_docs FROM lots WHERE id=$1 FOR UPDATE',[id]);if(!rows[0])throw new HttpError(404,'Lote n�o encontrado.');
+    const {rows}=await client.query('SELECT administrative_docs FROM lots WHERE id=$1 FOR UPDATE',[id]);if(!rows[0])throw new HttpError(404,'Lote não encontrado.');
     const docs=rows[0].administrative_docs || {};
     docs.clientDocs=[...(docs.clientDocs || []),{name:safeText(body.name,240),url:body.url}];
     return updateLot(id,{administrative_docs:docs},client);
@@ -107,9 +107,9 @@ async function route(req,res,path,body) {
   }
  }
  if(path[0]==='config') {
-  const key=path[1];if(!key)throw new HttpError(400,'Informe a configura��o.');
+  const key=path[1];if(!key)throw new HttpError(400,'Informe a configuração.');
   if(method==='GET') {
-   if(!publicConfig.has(key) && (!actor || (actor.role!=='admin' && key!=='pix_key')))throw new HttpError(403,'Configura��o restrita.');
+   if(!publicConfig.has(key) && (!actor || (actor.role!=='admin' && key!=='pix_key')))throw new HttpError(403,'Configuração restrita.');
    return (await query('SELECT value FROM config WHERE key=$1',[key])).rows[0]?.value ?? null;
   }
   assertAdmin(actor);
@@ -118,10 +118,10 @@ async function route(req,res,path,body) {
  if(path[0]==='map') {
   if(method==='GET')return (await query('SELECT * FROM map_mapped ORDER BY id')).rows;
   assertAdmin(actor);
-  if(method==='PUT') {if(!Array.isArray(body.lots)||body.lots.length>1000)throw new HttpError(400,'Mapa inv�lido.');await transaction(async c=>{
+  if(method==='PUT') {if(!Array.isArray(body.lots)||body.lots.length>1000)throw new HttpError(400,'Mapa inválido.');await transaction(async c=>{
    for(const rect of body.lots) {
     const values=['top','left','width','height'].map(k=>Number(rect[k]));
-    if(values.some(x=>!Number.isFinite(x)||x<0||x>100))throw new HttpError(400,'Coordenadas inv�lidas.');
+    if(values.some(x=>!Number.isFinite(x)||x<0||x>100))throw new HttpError(400,'Coordenadas inválidas.');
     await c.query('INSERT INTO map_mapped(id,top,"left",width,height) VALUES($1,$2,$3,$4,$5) ON CONFLICT(id) DO UPDATE SET top=EXCLUDED.top,"left"=EXCLUDED."left",width=EXCLUDED.width,height=EXCLUDED.height',[safeText(String(rect.id),80),...values]);
    }
   });return {ok:true};}
@@ -131,8 +131,8 @@ async function route(req,res,path,body) {
   if(method==='GET')return (await query('SELECT * FROM gallery ORDER BY created_at DESC,id DESC')).rows;
   assertAdmin(actor);
   if(method==='POST') {
-   if(!['image','localVideo','video','pdf'].includes(body.type))throw new HttpError(400,'Tipo de m�dia inv�lido.');
-   if(!/^https:\/\//.test(String(body.url)) && !/^\/api\/files\/[a-f0-9-]{36}$/.test(String(body.url)))throw new HttpError(400,'URL inv�lida.');
+   if(!['image','localVideo','video','pdf'].includes(body.type))throw new HttpError(400,'Tipo de mídia inválido.');
+   if(!/^https:\/\//.test(String(body.url)) && !/^\/api\/files\/[a-f0-9-]{36}$/.test(String(body.url)))throw new HttpError(400,'URL inválida.');
    if(String(body.url).startsWith('/api/'))await assertOwnedFile(actor,body.url);
    return (await query('INSERT INTO gallery(url,caption,type,name) VALUES($1,$2,$3,$4) RETURNING *',[body.url,safeText(body.caption || '',1000),body.type,safeText(body.name || '',240)])).rows[0];
   }
@@ -142,13 +142,13 @@ async function route(req,res,path,body) {
   assertAdmin(actor);
   if(method==='GET')return (await query('SELECT * FROM users WHERE status=$1 ORDER BY created_at DESC',[new URL(req.url,'http://localhost').searchParams.get('status') || 'pending'])).rows.map(publicUser);
   if(method==='PATCH') {
-   idOf(path[1]);if(!['pending','approved','rejected'].includes(body.status))throw new HttpError(400,'Status inv�lido.');
+   idOf(path[1]);if(!['pending','approved','rejected'].includes(body.status))throw new HttpError(400,'Status inválido.');
    return transaction(async c=>{
-    const {rows}=await c.query('SELECT * FROM users WHERE id=$1 FOR UPDATE',[path[1]]);const user=rows[0];if(!user)throw new HttpError(404,'Cadastro n�o encontrado.');
+    const {rows}=await c.query('SELECT * FROM users WHERE id=$1 FOR UPDATE',[path[1]]);const user=rows[0];if(!user)throw new HttpError(404,'Cadastro não encontrado.');
     if(body.status==='approved') {
      await c.query('SELECT id FROM lots WHERE id=$1 FOR UPDATE',[user.lote_id]);
      const clash=await c.query("SELECT id FROM users WHERE lote_id=$1 AND status='approved' AND id<>$2",[user.lote_id,user.id]);
-     if(clash.rows.length)throw new HttpError(409,'Este lote j� possui outro cliente aprovado.');
+     if(clash.rows.length)throw new HttpError(409,'Este lote já possui outro cliente aprovado.');
      await c.query('UPDATE lots SET status=$1,client=$2,client_cpf=$3,updated_at=now() WHERE id=$4',['Vendido',user.name,user.cpf,user.lote_id]);
     }
     const updated=await c.query("UPDATE users SET status=$1,approved_at=CASE WHEN $1='approved' THEN now() ELSE NULL END WHERE id=$2 RETURNING *",[body.status,user.id]);
@@ -157,24 +157,25 @@ async function route(req,res,path,body) {
   }
   if(method==='DELETE') {idOf(path[1]);await transaction(async c=>{await c.query('DELETE FROM app_sessions WHERE user_id=$1',[path[1]]);await c.query('DELETE FROM users WHERE id=$1',[path[1]]);});return {ok:true};}
  }
- throw new HttpError(404,'Recurso n�o encontrado.');
+ throw new HttpError(404,'Recurso não encontrado.');
 }
 export default async function handler(req,res) {
  res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
  try {
-  const path=new URL(req.url,'http://localhost').pathname.replace(/^\/api\/?/,'').split('/').filter(Boolean).map(decodeURIComponent);
-  if(!['GET','POST','PUT','PATCH','DELETE'].includes(req.method))throw new HttpError(405,'M�todo n�o permitido.');
+  const requestUrl=new URL(req.url,'http://localhost');
+  const path=(requestUrl.searchParams.get('__path') || requestUrl.pathname.replace(/^\/api\/?/,'')).split('/').filter(Boolean).map(decodeURIComponent);
+  if(!['GET','POST','PUT','PATCH','DELETE'].includes(req.method))throw new HttpError(405,'Método não permitido.');
   let body={};
   if(req.method!=='GET') {
    checkOrigin(req);
    body=typeof req.body==='string'?JSON.parse(req.body):req.body || {};
-   if(JSON.stringify(body).length>1500000)throw new HttpError(413,'Envie arquivos pelo upload, n�o dentro do cadastro.');
+   if(JSON.stringify(body).length>1500000)throw new HttpError(413,'Envie arquivos pelo upload, não dentro do cadastro.');
   }
   const result=await route(req,res,path,body);if(res.writableEnded)return;
   res.statusCode=200;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify(result));
  } catch(error) {
   const code=error.status || (error.code==='23505'?409:error instanceof SyntaxError?400:503);
-  const message=error.status?error.message:error.code==='23505'?'J� existe um cadastro com estes dados.':code===400?'JSON inv�lido.':'Servi�o temporariamente indispon�vel.';
+  const message=error.status?error.message:error.code==='23505'?'Já existe um cadastro com estes dados.':code===400?'JSON inválido.':'Serviço temporariamente indisponível.';
   if(!error.status)console.error('API failure',error.code || error.name);
   res.statusCode=code;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify({error:message}));
  }

@@ -14,7 +14,7 @@ export async function presignUpload(actor,body) {
  const name=safeText(body.name,240);
  const type=String(body.contentType);
  const size=Number(body.size);
- if(!types.has(type) || !Number.isSafeInteger(size) || size<=0 || size>100*1024*1024)throw new HttpError(400,'Formato ou tamanho de arquivo inv�lido (m�ximo 100 MB).');
+ if(!types.has(type) || !Number.isSafeInteger(size) || size<=0 || size>100*1024*1024)throw new HttpError(400,'Formato ou tamanho de arquivo inválido (máximo 100 MB).');
  const id=randomUUID();const bucket=process.env.NEON_STORAGE_BUCKET || 'loteamento';
  const objectKey=purpose+'/'+id+'/'+name.replace(/[^a-zA-Z0-9._-]/g,'_');
  const lotId=actor.role==='client'?actor.user.lote_id:body.lotId || null;
@@ -26,23 +26,23 @@ export async function presignUpload(actor,body) {
 }
 export async function completeUpload(actor,id) {
  const {rows}=await query('SELECT * FROM app_files WHERE id=$1',[id]);const file=rows[0];
- if(!actor || !file || (actor.role!=='admin' && file.owner_id!==actor.user.id))throw new HttpError(403,'Arquivo n�o autorizado.');
+ if(!actor || !file || (actor.role!=='admin' && file.owner_id!==actor.user.id))throw new HttpError(403,'Arquivo não autorizado.');
  const {HeadObjectCommand}=await import('@aws-sdk/client-s3');const info=await (await storage()).send(new HeadObjectCommand({Bucket:file.bucket,Key:file.object_key}));
- if(Number(info.ContentLength)!==Number(file.size_bytes) || info.ContentType!==file.content_type)throw new HttpError(400,'O arquivo enviado n�o corresponde ao upload solicitado.');
+ if(Number(info.ContentLength)!==Number(file.size_bytes) || info.ContentType!==file.content_type)throw new HttpError(400,'O arquivo enviado não corresponde ao upload solicitado.');
  await query('UPDATE app_files SET ready=true WHERE id=$1',[id]);
  return {url:'/api/files/'+id,id};
 }
 export async function fileDownload(actor,id) {
  if(actor?.role==='client' && actor.user.status!=='approved')actor=null;
  const {rows}=await query('SELECT * FROM app_files WHERE id=$1 AND ready=true',[id]);const file=rows[0];
- if(!file)throw new HttpError(404,'Arquivo n�o encontrado.');
+ if(!file)throw new HttpError(404,'Arquivo não encontrado.');
  if(file.visibility!=='public' && (!actor || (actor.role!=='admin' && file.owner_id!==actor.user.id && !(file.lot_id && file.lot_id===actor.user.lote_id && actor.user.status==='approved'))))throw new HttpError(403,'Arquivo privado.');
  const {GetObjectCommand}=await import('@aws-sdk/client-s3');const {getSignedUrl}=await import('@aws-sdk/s3-request-presigner');
  return getSignedUrl(await storage(),new GetObjectCommand({Bucket:file.bucket,Key:file.object_key,ResponseContentDisposition:file.content_type.startsWith('image/') || file.content_type.startsWith('video/')?'inline':'attachment'}),{expiresIn:300});
 }
 export async function assertOwnedFile(actor,url) {
  const match=/^\/api\/files\/([a-f0-9-]{36})$/.exec(String(url));
- if(!match)throw new HttpError(400,'Envie o arquivo antes de anex�-lo.');
+ if(!match)throw new HttpError(400,'Envie o arquivo antes de anexá-lo.');
  const {rows}=await query('SELECT id FROM app_files WHERE id=$1 AND ready=true AND owner_id=$2',[match[1],actor.user.id]);
- if(!rows.length)throw new HttpError(403,'Arquivo n�o autorizado.');
+ if(!rows.length)throw new HttpError(403,'Arquivo não autorizado.');
 }

@@ -1,7 +1,7 @@
 let pool;
 export async function getPool() {
  if (!pool) {
-  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL n�o configurada.');
+  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL não configurada.');
   const {Pool}=await import('pg');
   pool=new Pool({connectionString:process.env.DATABASE_URL,max:3,idleTimeoutMillis:10000,connectionTimeoutMillis:10000});
   if (process.env.VERCEL) {const {attachDatabasePool}=await import('@vercel/functions');attachDatabasePool(pool);}
