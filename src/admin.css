@@ -72,3 +72,6 @@
 /* Legibilidade e campos em telas pequenas. */
 .admin-sidebar nav button{font-size:14px}.admin-content td{font-size:14px}.admin-content th{font-size:12px!important}.admin-content .btn{font-size:13px!important}.admin-content input:not([type=range]):not([type=checkbox]),.admin-content select,.admin-content textarea{font-size:14px!important}.admin-metric>div{font-size:13px}.admin-metric small{font-size:12px}.admin-page-heading>div>p:last-child{font-size:14px}.admin-content :focus-visible,.admin-sidebar :focus-visible{outline:3px solid #78a98c;outline-offset:3px}
 @media(max-width:800px){.admin-content [style*="grid-column"]{grid-column:auto!important}.admin-content [style*="display: flex"]{flex-wrap:wrap}.admin-content input:not([type=checkbox]):not([type=range]),.admin-content select,.admin-content textarea{font-size:16px!important}}
+
+.admin-metric small,.admin-content td small{color:#65746e!important}.admin-page-heading>div>p:last-child{color:#65746e}.admin-topbar{flex-direction:row!important;flex-wrap:nowrap!important}
+@media(max-width:800px){.admin-sidebar{visibility:hidden}.admin-sidebar.is-open{visibility:visible}.admin-account{display:none}.admin-content [style*="grid-template-columns"]{grid-template-columns:1fr!important}}
