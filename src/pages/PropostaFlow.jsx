@@ -128,7 +128,7 @@ const PropostaFlow = () => {
             }}>
                 <option value="">-- Selecione seu lote --</option>
                 {allLots.filter(l => l.status === 'Disponível').map(l => (
-                    <option key={l.id} value={l.id}>{l.id} - Área: {l.size} - R$ {l.price.toLocaleString('pt-BR')}</option>
+                    <option key={l.id} value={l.id}>{l.id} - Área: {l.size} - {Number(l.price).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2})}</option>
                 ))}
             </select>
 
@@ -397,9 +397,9 @@ const PropostaFlow = () => {
                 await createPendingUser(userData);
 
                 alert('Proposta ENVIADA COM SUCESSO! Você receberá a confirmação em breve.');
-                navigate('/cliente');
+                navigate('/cliente', { state: { registrationSent: true } });
             } catch (err) {
-                alert("Erro ao enviar proposta. Verifique se o CPF já está cadastrado.");
+                alert(err.message || 'Não foi possível enviar o cadastro. Tente novamente.');
             }
         };
 

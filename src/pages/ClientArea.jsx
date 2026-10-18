@@ -1,6 +1,6 @@
 import { printHtml } from '../lib/printHtml';
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { loginAccount, logoutAccount, getAccount, uploadDataUrl, submitPaymentProof, submitClientDocument } from '../lib/api';
 import { getLotsSummary } from '../services/lotsService';
 import { getConfig } from '../services/configService';
@@ -34,9 +34,10 @@ const compressImage = (file, callback) => {
 };
 
 const ClientArea = () => {
+    const location = useLocation();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [viewRequested, setViewRequested] = useState(false);
-    const [awaitingApproval, setAwaitingApproval] = useState(false);
+    const [awaitingApproval, setAwaitingApproval] = useState(Boolean(location.state?.registrationSent));
 
     const [cpf, setCpf] = useState('');
     const [senha, setSenha] = useState('');
@@ -163,6 +164,10 @@ const ClientArea = () => {
     };
     useEffect(() => { getAccount().then(applyAccount).catch(() => {}); }, []);
     const handleLogin = async () => {
+        if (cpf.replace(/\D/g, '').length !== 11) {
+            alert('No portal do cliente, informe seu CPF com 11 dígitos. Para entrar como administrador, use o link Administração.');
+            return;
+        }
         try {
             await loginAccount('client', cpf, senha);
             applyAccount(await getAccount());
@@ -193,7 +198,9 @@ const ClientArea = () => {
                             <input type="text" placeholder="CPF" style={{ width: '100%', padding: '12px', margin: '10px 0', border: '1px solid #ddd', borderRadius: '8px' }} value={cpf} onChange={e => setCpf(e.target.value)} />
                             <input type="password" placeholder="Senha" style={{ width: '100%', padding: '12px', margin: '10px 0', border: '1px solid #ddd', borderRadius: '8px' }} value={senha} onChange={e => setSenha(e.target.value)} />
                             <button className="btn btn-primary" style={{ width: '100%', marginTop: '20px' }} onClick={handleLogin}>Acessar Portal</button>
-                            <a href="/#mapa" style={{ display: 'block', marginTop: '20px', color: 'var(--color-river)', fontWeight: 'bold', textDecoration: 'none', cursor: 'pointer' }}>Primeiro acesso? Escolha seu lote aqui.</a>
+                            <Link to="/proposta" style={{ display: 'block', marginTop: '20px', color: 'var(--color-river)', fontWeight: 'bold', textDecoration: 'none' }}>Primeiro acesso? Faça seu cadastro.</Link>
+                            <p style={{ color: '#666', fontSize: '0.85rem', marginTop: '8px' }}>Escolha o lote e crie sua senha. O acesso será liberado após a análise da administração.</p>
+                            <Link to="/admin" style={{ display: 'block', marginTop: '15px', color: 'var(--color-forest)', fontWeight: 'bold' }}>Administração</Link>
                             <Link to="/" style={{ display: 'block', marginTop: '15px', color: '#999', fontSize: '0.8rem', textDecoration: 'none' }}>Voltar ao Site</Link>
                         </>
                     )}
