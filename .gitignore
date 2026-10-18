@@ -11,6 +11,13 @@ node_modules
 dist
 dist-ssr
 *.local
+public/preview/
+.preview-public/
+.migration/
+.env.server.local
+.env.example.local
+admin-access.txt
+.env
 
 # Editor directories and files
 .vscode/*

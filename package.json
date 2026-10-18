@@ -3,13 +3,22 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": { "node": "22.x" },
   "scripts": {
+    "dev:server": "node --env-file=.env.server.local server/local.mjs",
+    "migrate:neon": "node --env-file=.env.server.local scripts/import-neon.mjs",
+    "test:server": "node --test tests/*.test.mjs",
     "dev": "vite",
+    "dev:preview": "vite --mode preview --host 127.0.0.1",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "pg": "^8.23.0",
+    "@vercel/functions": "^3.0.0",
+    "@aws-sdk/client-s3": "^3.850.0",
+    "@aws-sdk/s3-request-presigner": "^3.850.0",
     "@supabase/supabase-js": "^2.103.3",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.8.0",

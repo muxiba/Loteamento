@@ -1,28 +1,7 @@
-import { supabase } from '../lib/supabaseClient'
-
-export const getConfig = async (key) => {
-    const { data, error } = await supabase
-        .from('config')
-        .select('value')
-        .eq('key', key)
-        .single()
-
-    if (error && error.code !== 'PGRST116') { // PGRST116 is not found
-        console.error("Error fetching config:", error)
-        throw error
-    }
-    return data?.value || null
-}
-
-export const setConfig = async (key, value) => {
-    const { data, error } = await supabase
-        .from('config')
-        .upsert({ key, value })
-        .select()
-
-    if (error) {
-        console.error("Error setting config:", error)
-        throw error
-    }
-    return data[0]
-}
+import {api,uploadDataUrl} from '../lib/api';
+import {isPreview,getPreviewData} from '../lib/previewData';
+export const getConfig=async key=>isPreview?(await getPreviewData()).config[key] ?? null:api('config/'+encodeURIComponent(key));
+export const setConfig=async(key,value)=>{
+ if(typeof value==='string' && value.startsWith('data:'))value=(await uploadDataUrl(value,'mapa',null,'gallery')).url;
+ return api('config/'+encodeURIComponent(key),{method:'PUT',body:{value}});
+};

@@ -1,3 +1,5 @@
+import { printHtml } from '../lib/printHtml';
+import { loginAccount, logoutAccount, getSession, uploadDataUrl } from '../lib/api';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { loadGalleryDB, saveGalleryDB } from '../utils/db';
@@ -11,6 +13,7 @@ import { getGalleryItems, uploadGalleryFile, addGalleryItem, deleteGalleryItem }
 
 const AdminArea = () => {
     const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+    useEffect(() => { getSession().then(session => setIsAdminLoggedIn(session.role === 'admin')).catch(() => {}); }, []);
     const [activeTab, setActiveTab] = useState('crm');
     const [editingLotUid, setEditingLotUid] = useState(null);
     const [isCreatingLot, setIsCreatingLot] = useState(false);
@@ -26,6 +29,7 @@ const AdminArea = () => {
     // Sincronizar dados ao trocar de aba ou entrar em um lote
     useEffect(() => {
         const refreshAll = async () => {
+            if (!isAdminLoggedIn) return;
             if (activeTab === 'finance' || activeTab === 'crm' || activeTab === 'approvals' || editingLotUid) {
                 await reloadLots();
                 const pending = await getUsers('pending');
@@ -44,7 +48,7 @@ const AdminArea = () => {
             }
         };
         refreshAll();
-    }, [activeTab, editingLotUid, financeSubView]);
+    }, [activeTab, editingLotUid, financeSubView, isAdminLoggedIn]);
 
     const savePixKey = async (val) => {
         try {
@@ -65,6 +69,7 @@ const AdminArea = () => {
 
     useEffect(() => {
         const loadInitialData = async () => {
+            if (!isAdminLoggedIn) return;
             try {
                 // Config
                 const savedPix = await getConfig('pix_key');
@@ -99,16 +104,16 @@ const AdminArea = () => {
         };
 
         loadInitialData();
-    }, []);
+    }, [isAdminLoggedIn]);
 
-    // --- FUNÇÃO PARA GERAR O CONTRATO PDF JURÍDICO ---
+    // --- FUN��O PARA GERAR O CONTRATO PDF JUR�DICO ---
     const handleViewContract = (user) => {
         const sim = user.simulation || {};
-        const profile = user.profile || {}; // Dados extras como RG, Endereço, etc.
+        const profile = user.profile || {}; // Dados extras como RG, Endere�o, etc.
         const lotDetails = lots.find(l => l.id === (user.lote_id || user.loteId));
         
         const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
+        printWindow.document.write(printHtml`
             <html><head><title>Contrato - ${user.name}</title>
             <style>
                 body{font-family:'Times New Roman', Times, serif; padding:50px; color:#000; line-height:1.6; text-align:justify;}
@@ -120,51 +125,51 @@ const AdminArea = () => {
             </style>
             </head><body>
                 <div class="contract-paper">
-                    <h1>CONTRATO PARTICULAR DE PROMESSA DE COMPRA E VENDA DE IMÓVEL<br/>(ALIENAÇÃO FIDUCIÁRIA)</h1>
+                    <h1>CONTRATO PARTICULAR DE PROMESSA DE COMPRA E VENDA DE IM�VEL<br/>(ALIENA��O FIDUCI�RIA)</h1>
 
                     <p>
                         Pelo presente instrumento particular, de um lado, na qualidade de <strong>PROMITENTE VENDEDORA</strong>, 
-                        <strong>IADATA LTDA (Nome Fantasia: IATEK ME)</strong>, inscrita no CNPJ sob o nº 44.921.307/0001-91, 
-                        Sociedade Empresária Limitada, com sede na Rua Conceição Cipriano Tavares, nº 30, Bairro Parque das Acácias, 
-                        Conselheiro Lafaiete – MG, CEP: 36.407-078, telefone: (16) 98121-1082, e-mail: veraguimaraessiqueira@hotmail.com, 
-                        e de outro lado, na qualidade de <strong>PROMISSÁRIO COMPRADOR</strong>:
+                        <strong>IADATA LTDA (Nome Fantasia: IATEK ME)</strong>, inscrita no CNPJ sob o n� 44.921.307/0001-91, 
+                        Sociedade Empres�ria Limitada, com sede na Rua Concei��o Cipriano Tavares, n� 30, Bairro Parque das Ac�cias, 
+                        Conselheiro Lafaiete - MG, CEP: 36.407-078, telefone: (16) 98121-1082, e-mail: veraguimaraessiqueira@hotmail.com, 
+                        e de outro lado, na qualidade de <strong>PROMISS�RIO COMPRADOR</strong>:
                     </p>
 
                     <p>
                         <strong>${user.name}</strong>, brasileiro(a), ${profile.estadoCivil || '---'}, ${profile.profissao || '---'}, 
-                        portador(a) da Cédula de Identidade RG nº ${profile.rg || '---'} e inscrito(a) no CPF/MF sob o nº <strong>${user.cpf}</strong>, 
-                        residente e domiciliado(a) na ${profile.logradouro || '---'}, nº ${profile.numero || 's/n'}, 
+                        portador(a) da C�dula de Identidade RG n� ${profile.rg || '---'} e inscrito(a) no CPF/MF sob o n� <strong>${user.cpf}</strong>, 
+                        residente e domiciliado(a) na ${profile.logradouro || '---'}, n� ${profile.numero || 's/n'}, 
                         Bairro ${profile.bairro || '---'}, Cidade de ${profile.cidade || '---'}/${profile.uf || '--'}, CEP ${profile.cep || '---'}.
                     </p>
 
-                    <p>Têm entre si justo e contratado o presente instrumento particular, mediante as cláusulas e condições seguintes:</p>
+                    <p>T�m entre si justo e contratado o presente instrumento particular, mediante as cl�usulas e condi��es seguintes:</p>
 
-                    <span class="clause-title">Cláusula Primeira – Do Objeto</span>
+                    <span class="clause-title">Cl�usula Primeira - Do Objeto</span>
                     <p>
-                        A VENDEDORA é legítima proprietária e possuidora do imóvel denominado <strong>${user.lote_id || '---'}</strong>, 
-                        com área total de <strong>${lotDetails?.size || '---'}</strong>, devidamente aprovado pelos órgãos competentes. 
+                        A VENDEDORA � leg�tima propriet�ria e possuidora do im�vel denominado <strong>${user.lote_id || '---'}</strong>, 
+                        com �rea total de <strong>${lotDetails?.size || '---'}</strong>, devidamente aprovado pelos �rg�os competentes. 
                         A VENDEDORA promete vender e o COMPRADOR promete comprar o referido lote no estado em que se encontra.
                     </p>
 
-                    <span class="clause-title">Cláusula Segunda – Do Preço e Condições de Pagamento</span>
+                    <span class="clause-title">Cl�usula Segunda - Do Pre�o e Condi��es de Pagamento</span>
                     <p>
-                        O preço certo e ajustado para a presente Promessa de Compra e Venda é de 
+                        O pre�o certo e ajustado para a presente Promessa de Compra e Venda � de 
                         <strong>R$ ${Number(sim.totalPagoGeral || user.price || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>, 
                         a serem pagos pelo COMPRADOR da seguinte forma:
                     </p>
                     <ul>
                         <li><strong>Sinal/Entrada:</strong> R$ ${Number(sim.entrada || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}, pago na assinatura deste instrumento.</li>
-                        <li><strong>Saldo Restante:</strong> R$ ${Number((sim.totalPagoGeral || 0) - (sim.entrada || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2})}, pagos em ${user.total_parcelas || 120} parcelas mensais e sucessivas de R$ ${Number(sim.parcelaInicial || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})} sujeitas a correção monetária pré-fixada anual de ${(sim.taxa * 100) || 6}% ou índices oficiais previstos em lei.</li>
+                        <li><strong>Saldo Restante:</strong> R$ ${Number((sim.totalPagoGeral || 0) - (sim.entrada || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2})}, pagos em ${user.total_parcelas || 120} parcelas mensais e sucessivas de R$ ${Number(sim.parcelaInicial || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})} sujeitas a corre��o monet�ria pr�-fixada anual de ${(sim.taxa * 100) || 6}% ou �ndices oficiais previstos em lei.</li>
                     </ul>
 
-                    <span class="clause-title">Cláusula Terceira – Correção e Inadimplência</span>
+                    <span class="clause-title">Cl�usula Terceira - Corre��o e Inadimpl�ncia</span>
                     <p>
-                        O não pagamento pontual de qualquer parcela implicará na incidência de juros moratórios de 1% (um por cento) ao mês e multa compensatória de 2% (dois por cento) sobre o valor do débito atualizado. O atraso superior a 90 dias configura quebra de contrato sob o regime da Lei 9.514/97.
+                        O n�o pagamento pontual de qualquer parcela implicar� na incid�ncia de juros morat�rios de 1% (um por cento) ao m�s e multa compensat�ria de 2% (dois por cento) sobre o valor do d�bito atualizado. O atraso superior a 90 dias configura quebra de contrato sob o regime da Lei 9.514/97.
                     </p>
 
-                    <span class="clause-title">Cláusula Quinta – Do Foro</span>
+                    <span class="clause-title">Cl�usula Quinta - Do Foro</span>
                     <p>
-                        Para dirimir quaisquer questões decorrentes deste contrato, as partes elegem o foro da Comarca de domicílio do Empreendimento, com renúncia expressa a qualquer outro.
+                        Para dirimir quaisquer quest�es decorrentes deste contrato, as partes elegem o foro da Comarca de domic�lio do Empreendimento, com ren�ncia expressa a qualquer outro.
                     </p>
 
                     <p style="margin-top:40px;">Cidade da Sede, ${new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'})}.</p>
@@ -192,9 +197,9 @@ const AdminArea = () => {
     const approveUser = async (userId) => {
         try {
             const currentUser = pendingUsers.find(u => u.id === userId);
-            if (!currentUser) throw new Error("Usuário não encontrado na lista pendente.");
+            if (!currentUser) throw new Error("Usu�rio n�o encontrado na lista pendente.");
 
-            // 1. Aprovar Status do Usuário
+            // 1. Aprovar Status do Usu�rio
             await updateUserStatus(userId, 'approved');
             
             // 2. Vincular dados ao Lote Oficial
@@ -219,19 +224,19 @@ const AdminArea = () => {
 
             alert(`O acesso do cliente ${currentUser?.name || ''} foi liberado e o Lote ${currentUser.lote_id} foi marcado como VENDIDO!`);
         } catch (err) {
-            alert(`Erro ao aprovar usuário: ${err.message || "Erro desconhecido"}`);
+            alert(`Erro ao aprovar usu�rio: ${err.message || "Erro desconhecido"}`);
         }
     };
 
     const handleRejectUser = async (userId) => {
-        if (!window.confirm("Você tem certeza que deseja RECUSAR e EXCLUIR este cadastro permanentemente?")) return;
+        if (!window.confirm("Voc� tem certeza que deseja RECUSAR e EXCLUIR este cadastro permanentemente?")) return;
         
         try {
             await deleteUser(userId);
             setPendingUsers(prev => prev.filter(u => u.id !== userId));
-            alert("Cadastro excluído com sucesso.");
+            alert("Cadastro exclu�do com sucesso.");
         } catch (err) {
-            alert("Erro ao excluir usuário: " + err.message);
+            alert("Erro ao excluir usu�rio: " + err.message);
         }
     };
 
@@ -239,11 +244,11 @@ const AdminArea = () => {
         try {
             const newLot = {
                 id: newLotForm.id || `Lote ${lots.length + 1}`,
-                status: 'Disponível',
+                status: 'Dispon�vel',
                 client: '-',
                 paymentStatus: '-',
                 price: Number(newLotForm.price) || 0,
-                size: newLotForm.size || '0m²',
+                size: newLotForm.size || '0m�',
                 desc: newLotForm.desc || '',
                 parcelasPagas: 0,
                 totalParcelas: 120
@@ -256,7 +261,7 @@ const AdminArea = () => {
         }
     };
 
-    // --- LÓGICA DE DESENHO NO MAPA ---
+    // --- L�GICA DE DESENHO NO MAPA ---
     const [isDrawing, setIsDrawing] = useState(false);
     const [drawModeActive, setDrawModeActive] = useState(true);
     const [startPt, setStartPt] = useState(null);
@@ -303,14 +308,14 @@ const AdminArea = () => {
             await saveMappedLots([newMapped]);
             setDrawnLots(prev => [...prev, newMapped]);
             setPendingPoly(null);
-            alert(`Sucesso! Área vinculada ao ${lotId} no mapa.`);
+            alert(`Sucesso! �rea vinculada ao ${lotId} no mapa.`);
         } catch (err) {
             alert("Erro ao salvar mapeamento");
         }
     };
 
     const clearMap = async () => {
-        if (window.confirm("Apagar todas as demarcações do mapa? Os lotes no CRM não serão afetados.")) {
+        if (window.confirm("Apagar todas as demarca��es do mapa? Os lotes no CRM n�o ser�o afetados.")) {
             try {
                 await clearAllMappedLots();
                 setDrawnLots([]);
@@ -330,25 +335,22 @@ const AdminArea = () => {
     const editingLot = lots.find(l => l.uid === editingLotUid || l.id === editingLotUid);
 
     if (!isAdminLoggedIn) {
-        const handleAdminLogin = () => {
-            if (loginUser === '@dm1n' && loginPass === '@dm1n123$') {
-                setIsAdminLoggedIn(true);
-            } else {
-                alert('Credenciais incorretas!');
-            }
+        const handleAdminLogin = async () => {
+            try { await loginAccount('admin', loginUser, loginPass); setIsAdminLoggedIn(true); setLoginPass(''); await reloadLots(); }
+            catch (error) { alert(error.message); }
         };
 
         return (
             <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-dark)', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
                 <div style={{ background: 'white', padding: '40px', borderRadius: '15px', width: '100%', maxWidth: '400px', textAlign: 'center', boxShadow: 'var(--shadow)' }}>
                     <div className="logo" style={{ color: 'var(--color-dark)', marginBottom: '10px' }}>Reserva do Rio <span style={{ fontSize: '0.9rem', color: 'red' }}>ADMIN</span></div>
-                    <p style={{ color: '#666', marginBottom: '20px', fontSize: '0.9rem' }}>Acesso restrito à gestão do Loteamento.</p>
+                    <p style={{ color: '#666', marginBottom: '20px', fontSize: '0.9rem' }}>Acesso restrito � gest�o do Loteamento.</p>
 
                     <input type="text" placeholder="Login de Administrador" value={loginUser} onChange={e => setLoginUser(e.target.value)} style={{ width: '100%', padding: '12px', margin: '10px 0', border: '1px solid #ddd', borderRadius: '8px' }} />
                     <input type="password" placeholder="Senha" value={loginPass} onChange={e => setLoginPass(e.target.value)} style={{ width: '100%', padding: '12px', margin: '10px 0', border: '1px solid #ddd', borderRadius: '8px' }} />
 
                     <button className="btn btn-secondary" style={{ width: '100%', marginTop: '20px', background: 'var(--color-dark)', color: 'white' }} onClick={handleAdminLogin}>Validar Acesso</button>
-                    <Link to="/" style={{ display: 'block', marginTop: '20px', color: '#999', fontSize: '0.8rem', textDecoration: 'none' }}>Voltar à Tela Principal</Link>
+                    <Link to="/" style={{ display: 'block', marginTop: '20px', color: '#999', fontSize: '0.8rem', textDecoration: 'none' }}>Voltar � Tela Principal</Link>
                 </div>
             </div>
         );
@@ -367,7 +369,7 @@ const AdminArea = () => {
                         2. Liberar Cadastros
                     </button>
                     <button onClick={() => { setActiveTab('site'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'site' ? 'white' : '#999', fontWeight: activeTab === 'site' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
-                        3. Mapa e Site Público
+                        3. Mapa e Site P�blico
                     </button>
                     <button onClick={() => { setActiveTab('galeria'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'galeria' ? 'white' : '#999', fontWeight: activeTab === 'galeria' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
                         4. Galeria
@@ -382,13 +384,13 @@ const AdminArea = () => {
                         7. Receita Geral
                     </button>
                     <button onClick={() => { setActiveTab('boletos'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'boletos' ? 'var(--color-river)' : '#999', fontWeight: activeTab === 'boletos' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
-                        8. Lançar Boletos
+                        8. Lan�ar Boletos
                     </button>
                     <button onClick={() => { setActiveTab('brokers'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'brokers' ? 'var(--color-sand)' : '#999', fontWeight: activeTab === 'brokers' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
                         9. Corretores
                     </button>
                     <Link to="/" className="btn btn-secondary" style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white', padding: '8px 20px', fontSize: '0.8rem', marginLeft: '20px', textDecoration: 'none' }}><i className="fas fa-home"></i> TELA PRINCIPAL</Link>
-                    <button onClick={() => setIsAdminLoggedIn(false)} className="btn btn-secondary" style={{ borderColor: 'red', color: 'red', padding: '8px 20px', fontSize: '0.8rem', marginLeft: '10px' }}>Sair</button>
+                    <button onClick={async () => { await logoutAccount(); setIsAdminLoggedIn(false); }} className="btn btn-secondary" style={{ borderColor: 'red', color: 'red', padding: '8px 20px', fontSize: '0.8rem', marginLeft: '10px' }}>Sair</button>
                 </div>
             </div>
 
@@ -400,16 +402,16 @@ const AdminArea = () => {
                             <button onClick={() => setEditingLotUid(null)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontWeight: 'bold' }}>
                                 <i className="fas fa-arrow-left"></i> Voltar para tabela
                             </button>
-                            <button className="btn btn-primary" onClick={() => { setEditingLotUid(null); }}>Concluir Edição</button>
+                            <button className="btn btn-primary" onClick={() => { setEditingLotUid(null); }}>Concluir Edi��o</button>
                         </div>
                         <h2>Dados Oficiais: <span style={{ color: 'var(--color-forest)' }}>{editingLot.id}</span></h2>
                         <hr style={{ margin: '20px 0', borderTop: 'none', borderBottom: '1px solid #eee' }} />
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
                             <div>
-                                <h4 style={{ marginBottom: '10px' }}><i className="fas fa-tag"></i> Classificação do Lote (Banco de Dados)</h4>
+                                <h4 style={{ marginBottom: '10px' }}><i className="fas fa-tag"></i> Classifica��o do Lote (Banco de Dados)</h4>
 
-                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Nome / Identificação do Lote (Ex: Lote 01):</label>
+                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Nome / Identifica��o do Lote (Ex: Lote 01):</label>
                                 <input
                                     type="text"
                                     defaultValue={editingLot.id}
@@ -420,7 +422,7 @@ const AdminArea = () => {
                                             await editLot(editingLot.id, { id: newId });
                                             const newMapped = drawnLots.map(d => d.id === editingLot.id ? { ...d, id: newId } : d);
                                             setDrawnLots(newMapped);
-                                            alert("Identificação atualizada!");
+                                            alert("Identifica��o atualizada!");
                                         } catch (err) {
                                             alert("Erro ao mudar ID");
                                         }
@@ -440,12 +442,12 @@ const AdminArea = () => {
                                         }
                                     }}
                                     style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }}>
-                                    <option value="Disponível">Disponível para Compra</option>
-                                    <option value="Reservado">Reservado (Em análise)</option>
+                                    <option value="Dispon�vel">Dispon�vel para Compra</option>
+                                    <option value="Reservado">Reservado (Em an�lise)</option>
                                     <option value="Vendido">Vendido / Comprado</option>
                                 </select>
 
-                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Área (Metragem. Ex: 450.00):</label>
+                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>�rea (Metragem. Ex: 450.00):</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -456,27 +458,27 @@ const AdminArea = () => {
                                         if (isNaN(area)) return;
                                         try {
                                             await editLot(editingLot.id, { 
-                                                size: area.toFixed(2).replace('.', ',') + 'm²',
+                                                size: area.toFixed(2).replace('.', ',') + 'm�',
                                                 price: area * valorM2
                                             });
-                                            alert("Área e Preço recalculados!");
+                                            alert("�rea e Pre�o recalculados!");
                                         } catch (err) {
-                                            alert("Erro ao salvar área");
+                                            alert("Erro ao salvar �rea");
                                         }
                                     }}
                                     style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }}
                                 />
 
-                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Preço Final de Venda (R$):</label>
+                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Pre�o Final de Venda (R$):</label>
                                 <input
                                     type="number"
                                     defaultValue={editingLot.price}
                                     onBlur={async (e) => {
                                         try {
                                             await editLot(editingLot.id, { price: Number(e.target.value) });
-                                            alert("Preço de venda atualizado!");
+                                            alert("Pre�o de venda atualizado!");
                                         } catch (err) {
-                                            alert("Erro ao salvar preço");
+                                            alert("Erro ao salvar pre�o");
                                         }
                                     }}
                                     style={{ width: '100%', padding: '10px', marginBottom: '5px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '1.1rem', fontWeight: 'bold' }}
@@ -484,9 +486,9 @@ const AdminArea = () => {
                                 <div style={{ fontSize: '0.85rem', color: 'var(--color-forest)', fontWeight: 'bold', marginBottom: '15px' }}>
                                     Valor Formatado: R$ {Number(editingLot.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </div>
-                                <small style={{ color: '#999', display: 'block', marginBottom: '15px' }}>* Mudar a Área aciona a multiplicação automática, mas você pode sobrescrever o valor livremente aqui.</small>
+                                <small style={{ color: '#999', display: 'block', marginBottom: '15px' }}>* Mudar a �rea aciona a multiplica��o autom�tica, mas voc� pode sobrescrever o valor livremente aqui.</small>
 
-                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Descritivo Promocional (Site Público):</label>
+                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Descritivo Promocional (Site P�blico):</label>
                                 <textarea
                                     defaultValue={editingLot.desc}
                                     onBlur={async (e) => {
@@ -497,13 +499,13 @@ const AdminArea = () => {
                                         }
                                     }}
                                     rows="3"
-                                    placeholder="Ex: Lote plano, próximo à portaria..."
+                                    placeholder="Ex: Lote plano, pr�ximo � portaria..."
                                     style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', fontFamily: 'inherit', fontSize: '0.9rem' }}
                                 ></textarea>
                             </div>
 
                             <div style={{ background: '#fcfcfc', padding: '20px', borderRadius: '8px', borderLeft: '4px solid var(--color-river)' }}>
-                                <h4 style={{ marginBottom: '10px' }}><i className="fas fa-user-lock"></i> Gestão do Comprador e Documentações</h4>
+                                <h4 style={{ marginBottom: '10px' }}><i className="fas fa-user-lock"></i> Gest�o do Comprador e Documenta��es</h4>
 
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>CPF do Comprador (Vincular ao Portal):</label>
                                 <input 
@@ -552,7 +554,7 @@ const AdminArea = () => {
                                 </select>
 
                                 <div style={{ background: '#f0f4f8', padding: '15px', borderRadius: '8px', border: '1px solid #dce4ec', marginTop: '20px' }}>
-                                    <h4 style={{ fontSize: '0.9rem', color: 'var(--color-dark)', marginBottom: '15px' }}><i className="fas fa-folder-open"></i> Documentos da Administração</h4>
+                                    <h4 style={{ fontSize: '0.9rem', color: 'var(--color-dark)', marginBottom: '15px' }}><i className="fas fa-folder-open"></i> Documentos da Administra��o</h4>
 
                                     <label style={{ display: 'block', fontSize: '0.8rem', color: '#666', marginBottom: '3px' }}>Contrato Oficial Assinado (PDF/Imagem):</label>
                                     <input type="file" onChange={async (e) => {
@@ -610,7 +612,7 @@ const AdminArea = () => {
                                     className="btn btn-secondary"
                                     style={{ borderColor: 'red', color: 'red', width: '100%', marginTop: '30px', fontWeight: 'bold' }}
                                     onClick={async () => {
-                                        if (window.confirm(`TEM CERTEZA que deseja EXCLUIR o ${editingLot.id}? Esta ação é irreversível.`)) {
+                                        if (window.confirm(`TEM CERTEZA que deseja EXCLUIR o ${editingLot.id}? Esta a��o � irrevers�vel.`)) {
                                             try {
                                                 await removeLot(editingLot.id);
                                                 await deleteMappedLot(editingLot.id);
@@ -635,7 +637,7 @@ const AdminArea = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <div>
                                 <h3>Gerenciamento Mestre (CRM)</h3>
-                                <p style={{ color: '#666', fontSize: '0.9rem' }}>Passo 1: Este é o banco de dados. Cadastre fisicamente os lotes aqui.</p>
+                                <p style={{ color: '#666', fontSize: '0.9rem' }}>Passo 1: Este � o banco de dados. Cadastre fisicamente os lotes aqui.</p>
                             </div>
                             <button onClick={() => setIsCreatingLot(true)} className="btn btn-primary" style={{ padding: '10px 20px', background: 'var(--color-forest)', color: 'white' }}>
                                 <i className="fas fa-plus"></i> Novo Lote Oficial
@@ -649,8 +651,8 @@ const AdminArea = () => {
                                     <th style={{ padding: '15px 10px' }}>ID / Banco Dados</th>
                                     <th style={{ padding: '15px 10px' }}>Status Base</th>
                                     <th style={{ padding: '15px 10px' }}>Cliente Vinculado</th>
-                                    <th style={{ padding: '15px 10px' }}>Preço/Área</th>
-                                    <th style={{ padding: '15px 10px', textAlign: 'right' }}>Ações</th>
+                                    <th style={{ padding: '15px 10px' }}>Pre�o/�rea</th>
+                                    <th style={{ padding: '15px 10px', textAlign: 'right' }}>A��es</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -682,25 +684,25 @@ const AdminArea = () => {
                 {isCreatingLot && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)', maxWidth: '600px', margin: '0 auto' }}>
                         <h3>Cadastrar Lote no Banco de Dados Central</h3>
-                        <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px' }}>Defina a fundação deste imóvel.</p>
+                        <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px' }}>Defina a funda��o deste im�vel.</p>
 
-                        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', fontSize: '0.9rem' }}>Identificação (Ex: Lote 05)</label>
+                        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', fontSize: '0.9rem' }}>Identifica��o (Ex: Lote 05)</label>
                         <input type="text" value={newLotForm.id} onChange={e => setNewLotForm({ ...newLotForm, id: e.target.value })} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px', marginBottom: '15px' }} />
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                             <div>
-                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', fontSize: '0.9rem' }}>Área (m²)</label>
+                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', fontSize: '0.9rem' }}>�rea (m�)</label>
                                 <input type="number" onChange={e => {
                                     const area = Number(e.target.value);
                                     setNewLotForm({
                                         ...newLotForm,
-                                        size: area ? area + 'm²' : '',
+                                        size: area ? area + 'm�' : '',
                                         price: area * (simConfig.valorBaseM2 || 250)
                                     });
                                 }} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px', marginBottom: '15px' }} />
                             </div>
                             <div>
-                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', fontSize: '0.9rem' }}>Preço Calc. (R$)</label>
+                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', fontSize: '0.9rem' }}>Pre�o Calc. (R$)</label>
                                 <input type="number" value={newLotForm.price} onChange={e => setNewLotForm({ ...newLotForm, price: e.target.value })} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px', marginBottom: '15px' }} />
                             </div>
                         </div>
@@ -715,15 +717,15 @@ const AdminArea = () => {
                     </div>
                 )}
 
-                {/* --- 2. APROVAÇÕES DE NOVOS CLIENTES --- */}
+                {/* --- 2. APROVA��ES DE NOVOS CLIENTES --- */}
                 {activeTab === 'approvals' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
-                        <h3>2. Triagem e Liberação de Cadastros</h3>
-                        <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px' }}>Libere o acesso dos usuários que se cadastraram pelo site.</p>
+                        <h3>2. Triagem e Libera��o de Cadastros</h3>
+                        <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px' }}>Libere o acesso dos usu�rios que se cadastraram pelo site.</p>
 
                         {pendingUsers.length === 0 ? (
                             <div style={{ padding: '40px', textAlign: 'center', color: '#999', background: '#f9f9f9', borderRadius: '10px' }}>
-                                Nenhum cliente pendente de aprovação.
+                                Nenhum cliente pendente de aprova��o.
                             </div>
                         ) : (
                             <div style={{ overflowX: 'auto' }}>
@@ -732,8 +734,8 @@ const AdminArea = () => {
                                         <tr style={{ background: '#f5f5f5', color: '#666', fontSize: '0.8rem' }}>
                                             <th style={{ padding: '10px' }}>Cliente</th>
                                             <th style={{ padding: '10px' }}>Contatos</th>
-                                            <th style={{ padding: '10px' }}>Lote Intenção</th>
-                                            <th style={{ padding: '10px', textAlign: 'right' }}>Ações</th>
+                                            <th style={{ padding: '10px' }}>Lote Inten��o</th>
+                                            <th style={{ padding: '10px', textAlign: 'right' }}>A��es</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -775,8 +777,8 @@ const AdminArea = () => {
                         )}
 
                         <div style={{ marginTop: '50px', borderTop: '2px solid #eee', paddingTop: '30px' }}>
-                            <h3 style={{ color: 'var(--color-forest)' }}>Acessos Liberados (Histórico)</h3>
-                            <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px' }}>Clientes que já possuem permissão de login.</p>
+                            <h3 style={{ color: 'var(--color-forest)' }}>Acessos Liberados (Hist�rico)</h3>
+                            <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px' }}>Clientes que j� possuem permiss�o de login.</p>
 
                             {approvedUsers.length === 0 ? (
                                 <p style={{ color: '#999', textAlign: 'center' }}>Nenhum acesso liberado ainda.</p>
@@ -788,7 +790,7 @@ const AdminArea = () => {
                                                 <th style={{ padding: '15px' }}>Nome / Lote</th>
                                                 <th>Login / Telefone</th>
                                                 <th>E-mail</th>
-                                                <th style={{ textAlign: 'right', paddingRight: '15px' }}>Ações</th>
+                                                <th style={{ textAlign: 'right', paddingRight: '15px' }}>A��es</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -833,12 +835,12 @@ const AdminArea = () => {
                     </div>
                 )}
 
-                {/* --- 3. MAPEAMENTO E VÍNCULO (SITE PÚBLICO) --- */}
+                {/* --- 3. MAPEAMENTO E V�NCULO (SITE P�BLICO) --- */}
                 {activeTab === 'site' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)', marginBottom: '30px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <div>
-                                <h3><i className="fas fa-map-marked-alt" style={{ color: 'var(--color-forest)' }}></i> 3. Vitrine: Conectar Polígonos na Planta</h3>
+                                <h3><i className="fas fa-map-marked-alt" style={{ color: 'var(--color-forest)' }}></i> 3. Vitrine: Conectar Pol�gonos na Planta</h3>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
                                     {drawnLots.map((l, idx) => (
                                         <span key={idx} style={{ background: '#eee', padding: '5px 10px', borderRadius: '20px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -944,7 +946,7 @@ const AdminArea = () => {
                 {activeTab === 'galeria' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
                         <h3>4. Gerenciamento de Galeria Cloud</h3>
-                        <p style={{ color: '#666', marginBottom: '20px' }}>Arraste ou selecione arquivos para subir para a Web. Imagens e vídeos aparecerão para todos os clientes.</p>
+                        <p style={{ color: '#666', marginBottom: '20px' }}>Arraste ou selecione arquivos para subir para a Web. Imagens e v�deos aparecer�o para todos os clientes.</p>
                         
                         <div style={{ background: '#f5f5f5', padding: '20px', borderRadius: '10px', marginBottom: '30px', border: '2px dashed #ccc', textAlign: 'center' }}>
                             <input type="file" multiple accept="image/*,video/mp4" onChange={async (e) => {
@@ -972,7 +974,7 @@ const AdminArea = () => {
                                     <div style={{ padding: '10px', display: 'flex', justifyContent: 'center' }}>
                                         <button 
                                             onClick={async () => {
-                                                if(confirm("Deseja remover esta mídia da nuvem?")) {
+                                                if(confirm("Deseja remover esta m�dia da nuvem?")) {
                                                     await deleteGalleryItem(item.id, item.url);
                                                     setGalleryItems(galleryItems.filter(i => i.id !== item.id));
                                                 }
@@ -1004,34 +1006,34 @@ const AdminArea = () => {
                 {/* --- 6. CONFIGURADOR DO SIMULADOR --- */}
                 {activeTab === 'simconfig' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
-                        <h3>6. Configurações Financeiras Globais (Simulador)</h3>
+                        <h3>6. Configura��es Financeiras Globais (Simulador)</h3>
                         <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '30px' }}>
-                            Defina as diretrizes matemáticas que controlam o "Simulador Sem Surpresas" da sua Vitrine.
+                            Defina as diretrizes matem�ticas que controlam o "Simulador Sem Surpresas" da sua Vitrine.
                         </p>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                             <div style={{ background: '#f5f5f5', padding: '15px', borderRadius: '8px', borderLeft: '4px solid var(--color-river)', gridColumn: '1 / 3' }}>
-                                <label style={{ display: 'block', fontWeight: 'bold' }}>Valor Base Global do Metro Quadrado (R$/m²)</label>
+                                <label style={{ display: 'block', fontWeight: 'bold' }}>Valor Base Global do Metro Quadrado (R$/m�)</label>
                                 <input id="cfg_valorm2" type="number" defaultValue={simConfig.valorBaseM2 || 250} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-forest)' }} />
-                                <small style={{ color: '#999' }}>Ao cadastrar um lote informando sua Área (m²), o sistema calculará automaticamente o preço oficial multiplicando a área por este valor.</small>
+                                <small style={{ color: '#999' }}>Ao cadastrar um lote informando sua �rea (m�), o sistema calcular� automaticamente o pre�o oficial multiplicando a �rea por este valor.</small>
                             </div>
                             <div>
-                                <label style={{ display: 'block', fontWeight: 'bold' }}>Índice de Correção Anual (%)</label>
+                                <label style={{ display: 'block', fontWeight: 'bold' }}>�ndice de Corre��o Anual (%)</label>
                                 <input id="cfg_taxa" type="number" defaultValue={simConfig.taxaAnual * 100} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc' }} />
-                                <small style={{ color: '#999' }}>Ex: 6 para 6% a.a de correção na fórmula.</small>
+                                <small style={{ color: '#999' }}>Ex: 6 para 6% a.a de corre��o na f�rmula.</small>
                             </div>
                             <div>
-                                <label style={{ display: 'block', fontWeight: 'bold' }}>Entrada Mínima (Reais)</label>
+                                <label style={{ display: 'block', fontWeight: 'bold' }}>Entrada M�nima (Reais)</label>
                                 <input id="cfg_entrada" type="number" defaultValue={simConfig.entradaMinima} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc' }} />
-                                <small style={{ color: '#999' }}>Impede preenchimentos com entradas fictícias.</small>
+                                <small style={{ color: '#999' }}>Impede preenchimentos com entradas fict�cias.</small>
                             </div>
                             <div>
-                                <label style={{ display: 'block', fontWeight: 'bold' }}>Desconto Especial À Vista (%)</label>
+                                <label style={{ display: 'block', fontWeight: 'bold' }}>Desconto Especial � Vista (%)</label>
                                 <input id="cfg_desconto" type="number" defaultValue={simConfig.descontoAvista} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc' }} />
-                                <small style={{ color: '#999' }}>Bônus mostrado caso o pagamento seja cash (Ex: 10).</small>
+                                <small style={{ color: '#999' }}>B�nus mostrado caso o pagamento seja cash (Ex: 10).</small>
                             </div>
                             <div>
-                                <label style={{ display: 'block', fontWeight: 'bold' }}>Máximo de Parcelas (Meses)</label>
+                                <label style={{ display: 'block', fontWeight: 'bold' }}>M�ximo de Parcelas (Meses)</label>
                                 <input id="cfg_maxparc" type="number" defaultValue={simConfig.maxParcelas} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc' }} />
                                 <small style={{ color: '#999' }}>Limite superior do slider. (Default 100).</small>
                             </div>
@@ -1048,7 +1050,7 @@ const AdminArea = () => {
                             await setConfig('sim_config', newConf);
                             setSimConfig(newConf);
 
-                            // ATUALIZAÇÃO EM MASSA: Recalcular preços de todos os lotes com base no novo m2
+                            // ATUALIZA��O EM MASSA: Recalcular pre�os de todos os lotes com base no novo m2
                             lots.forEach(async l => {
                                 const areaNum = parseFloat(l.size.replace(',', '.').replace(/[^\d.]/g, ''));
                                 if (!isNaN(areaNum)) {
@@ -1056,12 +1058,12 @@ const AdminArea = () => {
                                 }
                             });
 
-                            alert("Parâmetros do simulador e preços de todos os lotes atualizados com sucesso!");
+                            alert("Par�metros do simulador e pre�os de todos os lotes atualizados com sucesso!");
                         }}>Salvar Matriz Financeira</button>
                     </div>
                 )}
 
-                {/* --- 7. GESTÃO DE RECEBÍVEIS (DASHBOARD FINANCEIRO) --- */}
+                {/* --- 7. GEST�O DE RECEB�VEIS (DASHBOARD FINANCEIRO) --- */}
                 {activeTab === 'finance' && (
                     <div style={{ animation: 'fadeIn 0.5s' }}>
                         {financeSubView ? (
@@ -1082,10 +1084,10 @@ const AdminArea = () => {
                                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                                     <thead>
                                         <tr style={{ borderBottom: '2px solid #eee', background: '#f9f9f9' }}>
-                                            <th style={{ padding: '15px' }}>Mês/Parcela</th>
-                                            <th style={{ padding: '15px' }}>Boleto (Você Envia)</th>
+                                            <th style={{ padding: '15px' }}>M�s/Parcela</th>
+                                            <th style={{ padding: '15px' }}>Boleto (Voc� Envia)</th>
                                             <th style={{ padding: '15px' }}>Comprovante (Cliente)</th>
-                                            <th style={{ padding: '15px' }}>Validação (Admin)</th>
+                                            <th style={{ padding: '15px' }}>Valida��o (Admin)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1128,7 +1130,7 @@ const AdminArea = () => {
                                                                     const reader = new FileReader();
                                                                     reader.onload = async () => {
                                                                         await savePaymentUpdate({ boletoUrl: reader.result, boletoName: file.name });
-                                                                        alert(`Boleto da parcela ${num} disponível para o cliente!`);
+                                                                        alert(`Boleto da parcela ${num} dispon�vel para o cliente!`);
                                                                     };
                                                                     reader.readAsDataURL(file);
                                                                 }} style={{ fontSize: '0.7rem', width: '150px' }} />
@@ -1161,15 +1163,15 @@ const AdminArea = () => {
                                         </h3>
                                     </div>
                                     <div style={{ background: 'white', padding: '20px', borderRadius: '15px', boxShadow: 'var(--shadow)', borderLeft: '5px solid var(--color-river)' }}>
-                                        <small style={{ color: '#999', fontWeight: 'bold' }}>VGV DISPONÍVEL</small>
+                                        <small style={{ color: '#999', fontWeight: 'bold' }}>VGV DISPON�VEL</small>
                                         <h3 style={{ fontSize: '1.5rem', color: 'var(--color-river)', marginTop: '5px' }}>
-                                            {lots.filter(l => l.status === 'Disponível').reduce((acc, l) => acc + (Number(l.price) || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                            {lots.filter(l => l.status === 'Dispon�vel').reduce((acc, l) => acc + (Number(l.price) || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                         </h3>
                                     </div>
                                 </div>
 
                                 <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)', marginBottom: '30px' }}>
-                                    <h3>Configuração Global de Pagamento</h3>
+                                    <h3>Configura��o Global de Pagamento</h3>
                                     <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '10px', display: 'flex', gap: '20px', alignItems: 'flex-end' }}>
                                         <div style={{ flex: 1 }}>
                                             <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', fontSize: '0.8rem' }}>Sua Chave PIX</label>
@@ -1185,13 +1187,13 @@ const AdminArea = () => {
                                 </div>
 
                                 <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
-                                    <h3>Relatório de Cobrança</h3>
+                                    <h3>Relat�rio de Cobran�a</h3>
                                     <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
                                         <thead>
                                             <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
                                                 <th style={{ padding: '15px 10px' }}>Lote / Cliente</th>
                                                 <th style={{ padding: '15px 10px' }}>Status</th>
-                                                <th style={{ padding: '15px 10px' }}>Ações</th>
+                                                <th style={{ padding: '15px 10px' }}>A��es</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1221,12 +1223,12 @@ const AdminArea = () => {
                 {/* --- 8. BOLETOS E MENSALIDADES --- */}
                 {activeTab === 'boletos' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
-                        <h3>Lotes Vendidos - Lançamento de Boletos</h3>
+                        <h3>Lotes Vendidos - Lan�amento de Boletos</h3>
                         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
                             <thead>
                                 <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
                                     <th style={{ padding: '15px 10px' }}>Lote / Cliente</th>
-                                    <th style={{ padding: '15px 10px', textAlign: 'right' }}>Ação</th>
+                                    <th style={{ padding: '15px 10px', textAlign: 'right' }}>A��o</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1240,7 +1242,7 @@ const AdminArea = () => {
                                             <button
                                                 onClick={() => { setActiveTab('finance'); setFinanceSubView(l.id); }}
                                                 style={{ background: 'var(--color-river)', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>
-                                                Lançar Mensalidades
+                                                Lan�ar Mensalidades
                                             </button>
                                         </td>
                                     </tr>
@@ -1254,16 +1256,16 @@ const AdminArea = () => {
                 {activeTab === 'brokers' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
                         <h3>9. Equipe de Corretores Oficiais</h3>
-                        <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px' }}>Cadastre os corretores que atenderão os clientes do site. O primeiro da lista será o contato principal do WhatsApp.</p>
+                        <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px' }}>Cadastre os corretores que atender�o os clientes do site. O primeiro da lista ser� o contato principal do WhatsApp.</p>
                         
                         <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '10px', marginBottom: '30px' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '15px', alignItems: 'flex-end' }}>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold' }}>Nome do Corretor</label>
-                                    <input id="broker_name" type="text" placeholder="Ex: João Silva" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                    <input id="broker_name" type="text" placeholder="Ex: Jo�o Silva" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold' }}>WhatsApp (Apenas Números)</label>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold' }}>WhatsApp (Apenas N�meros)</label>
                                     <input id="broker_phone" type="text" placeholder="Ex: 31988887777" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
                                 </div>
                                 <div>
@@ -1294,7 +1296,7 @@ const AdminArea = () => {
                                 <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
                                     <th style={{ padding: '15px' }}>Corretor</th>
                                     <th>WhatsApp</th>
-                                    <th style={{ textAlign: 'right' }}>Ações</th>
+                                    <th style={{ textAlign: 'right' }}>A��es</th>
                                 </tr>
                             </thead>
                             <tbody>
