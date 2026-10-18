@@ -1,8 +1,10 @@
 import {api,externalizeFiles} from '../lib/api';
 import {isPreview,getPreviewData} from '../lib/previewData';
-export const getLots=async()=>isPreview?(await getPreviewData()).lots:api('lots');
+import {normalizeLot} from '../lib/adminData';
+export const getLots=async()=>((isPreview?(await getPreviewData()).lots:await api('lots')) || []).map(normalizeLot);
 export const getLotsSummary=async()=>isPreview?(await getPreviewData()).lots:api('lots');
-export const createLot=lot=>api('lots',{method:'POST',body:lot});
-export const updateLot=async(id,updates)=>api('lots/'+encodeURIComponent(id),{method:'PATCH',body:await externalizeFiles(updates,id)});
+export const createLot=async lot=>normalizeLot(await api('lots',{method:'POST',body:lot}));
+export const updateLot=async(id,updates)=>normalizeLot(await api('lots/'+encodeURIComponent(id),{method:'PATCH',body:await externalizeFiles(updates,id)}));
 export const updateLotPayments=(id,payments)=>updateLot(id,{payments});
+export const updateSinglePayment=async(id,index,changes)=>normalizeLot(await api('lots/'+encodeURIComponent(id)+'/payments/'+index,{method:'PATCH',body:await externalizeFiles(changes,id)}));
 export const deleteLot=id=>api('lots/'+encodeURIComponent(id),{method:'DELETE',body:{}});

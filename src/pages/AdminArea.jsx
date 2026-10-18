@@ -2,10 +2,13 @@ import { printHtml } from '../lib/printHtml';
 import { loginAccount, logoutAccount, getSession, uploadDataUrl } from '../lib/api';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { loadGalleryDB, saveGalleryDB } from '../utils/db';
+import AdminShell from '../components/AdminShell';
+import { Trees, Search } from 'lucide-react';
+import { filterAdminLots, hasClient, enrichAdminLots, paymentAmount } from '../lib/adminData';
 import mapaPlanta from '../assets/planta.jpg';
 import { defaultCopy } from '../components/About';
 import { useLots } from '../hooks/useLots';
+import { updateSinglePayment } from '../services/lotsService';
 import { getUsers, updateUserStatus, deleteUser } from '../services/userService';
 import { getMappedLots, saveMappedLots, clearAllMappedLots, deleteMappedLot } from '../services/mapService';
 import { getConfig, setConfig } from '../services/configService';
@@ -15,6 +18,12 @@ const AdminArea = () => {
     const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
     useEffect(() => { getSession().then(session => setIsAdminLoggedIn(session.role === 'admin')).catch(() => {}); }, []);
     const [activeTab, setActiveTab] = useState('crm');
+    const [adminError,setAdminError]=useState('');
+    const [search,setSearch]=useState('');
+    const [statusFilter,setStatusFilter]=useState('Todos');
+    const [aboutCopy,setAboutCopy]=useState(defaultCopy);
+    const [loginBusy,setLoginBusy]=useState(false);
+    const [loginError,setLoginError]=useState('');
     const [editingLotUid, setEditingLotUid] = useState(null);
     const [isCreatingLot, setIsCreatingLot] = useState(false);
     const [newLotForm, setNewLotForm] = useState({ id: '', price: '', size: '', desc: '' });
@@ -23,7 +32,7 @@ const AdminArea = () => {
     const [loginPass, setLoginPass] = useState('');
     const [financeSubView, setFinanceSubView] = useState(null);
 
-    const { lots, loading: lotsLoading, error: lotsError, addLot, editLot, removeLot, reload: reloadLots } = useLots();
+    const { lots: rawLots, loading: lotsLoading, error: lotsError, addLot, editLot, removeLot, reload: reloadLots } = useLots();
     const [pixKey, setPixKey] = useState('chave@pix.com');
 
     // Sincronizar dados ao trocar de aba ou entrar em um lote
@@ -47,7 +56,7 @@ const AdminArea = () => {
                 setGalleryItems(items);
             }
         };
-        refreshAll();
+        refreshAll().catch(error=>setAdminError(error.message));
     }, [activeTab, editingLotUid, financeSubView, isAdminLoggedIn]);
 
     const savePixKey = async (val) => {
@@ -63,6 +72,7 @@ const AdminArea = () => {
     const [galleryItems, setGalleryItems] = useState([]);
     const [pendingUsers, setPendingUsers] = useState([]);
     const [approvedUsers, setApprovedUsers] = useState([]);
+    const lots=enrichAdminLots(rawLots,approvedUsers);
     const [drawnLots, setDrawnLots] = useState([]);
     const [mapImageUrl, setMapImageUrl] = useState(mapaPlanta);
     const [brokers, setBrokers] = useState([]);
@@ -80,6 +90,9 @@ const AdminArea = () => {
 
                 const savedMap = await getConfig('map_custom_url');
                 if (savedMap) setMapImageUrl(savedMap);
+
+                const savedCopy=await getConfig('about_text');
+                if(typeof savedCopy==='string')setAboutCopy(savedCopy);
 
                 // Users
                 const pending = await getUsers('pending');
@@ -99,7 +112,7 @@ const AdminArea = () => {
                 const savedBrokers = await getConfig('brokers_list');
                 if (savedBrokers) setBrokers(savedBrokers);
             } catch (err) {
-                console.error("Error loading initial data:", err);
+                setAdminError(err.message);
             }
         };
 
@@ -154,12 +167,12 @@ const AdminArea = () => {
                     <span class="clause-title">Cláusula Segunda – Do Preço e Condições de Pagamento</span>
                     <p>
                         O preço certo e ajustado para a presente Promessa de Compra e Venda é de 
-                        <strong>R$ ${Number(sim.totalPagoGeral || user.price || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>, 
+                        <strong>R$ ${Number(sim.totalPagoGeral || user.price || 0).toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2})}</strong>, 
                         a serem pagos pelo COMPRADOR da seguinte forma:
                     </p>
                     <ul>
-                        <li><strong>Sinal/Entrada:</strong> R$ ${Number(sim.entrada || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}, pago na assinatura deste instrumento.</li>
-                        <li><strong>Saldo Restante:</strong> R$ ${Number((sim.totalPagoGeral || 0) - (sim.entrada || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2})}, pagos em ${user.total_parcelas || 120} parcelas mensais e sucessivas de R$ ${Number(sim.parcelaInicial || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})} sujeitas a correção monetária pré-fixada anual de ${(sim.taxa * 100) || 6}% ou índices oficiais previstos em lei.</li>
+                        <li><strong>Sinal/Entrada:</strong> R$ ${Number(sim.entrada || 0).toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2})}, pago na assinatura deste instrumento.</li>
+                        <li><strong>Saldo Restante:</strong> R$ ${Number((sim.totalPagoGeral || 0) - (sim.entrada || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2})}, pagos em ${user.total_parcelas || 120} parcelas mensais e sucessivas de R$ ${Number(sim.parcelaInicial || 0).toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2})} sujeitas a correção monetária pré-fixada anual de ${(sim.taxa * 100) || 6}% ou índices oficiais previstos em lei.</li>
                     </ul>
 
                     <span class="clause-title">Cláusula Terceira – Correção e Inadimplência</span>
@@ -199,25 +212,8 @@ const AdminArea = () => {
             const currentUser = pendingUsers.find(u => u.id === userId);
             if (!currentUser) throw new Error("Usuário não encontrado na lista pendente.");
 
-            // 1. Aprovar Status do Usuário
             await updateUserStatus(userId, 'approved');
-            
-            // 2. Vincular dados ao Lote Oficial
-            if (currentUser.lote_id) {
-                const existingLot = lots.find(l => l.id === currentUser.lote_id);
-                const currentAdminDocs = existingLot?.administrative_docs || {};
-                await editLot(currentUser.lote_id, {
-                    status: 'Vendido',
-                    client: currentUser.name,
-                    price: currentUser.simulation?.totalGeral || currentUser.price,
-                    totalParcelas: currentUser.total_parcelas || 120,
-                    administrative_docs: {
-                        ...currentAdminDocs,
-                        clientPhone: currentUser.telefone,
-                        simulation: currentUser.simulation
-                    }
-                });
-            }
+            await reloadLots();
 
             setPendingUsers(prev => prev.filter(u => u.id !== userId));
             setApprovedUsers(prev => [...prev, { ...currentUser, status: 'approved', approved_at: new Date().toISOString() }]);
@@ -332,69 +328,36 @@ const AdminArea = () => {
         return <span style={{ color: '#ccc' }}>-</span>;
     };
 
+    const refreshAdmin=async()=>{
+        setAdminError('');
+        try {
+            const [,pending,approved,mapped,gallery]=await Promise.all([reloadLots(),getUsers('pending'),getUsers('approved'),getMappedLots(),getGalleryItems()]);
+            setPendingUsers(pending);setApprovedUsers(approved);setDrawnLots(mapped);setGalleryItems(gallery);
+        }catch(error){setAdminError(error.message);}
+    };
+    const filteredLots=filterAdminLots(lots,search,statusFilter);
+    const navigateAdmin=tab=>{setActiveTab(tab);setEditingLotUid(null);setIsCreatingLot(false);setFinanceSubView(null);setAdminError('');};
     const editingLot = lots.find(l => l.uid === editingLotUid || l.id === editingLotUid);
 
     if (!isAdminLoggedIn) {
-        const handleAdminLogin = async () => {
-            try { await loginAccount('admin', loginUser, loginPass); setIsAdminLoggedIn(true); setLoginPass(''); await reloadLots(); }
-            catch (error) { alert(error.message); }
+        const handleAdminLogin = async event => {
+            event.preventDefault();setLoginBusy(true);setLoginError('');
+            try {await loginAccount('admin',loginUser,loginPass);setLoginPass('');setIsAdminLoggedIn(true);await reloadLots();}
+            catch(error){setLoginError(error.message);}finally{setLoginBusy(false);}
         };
-
-        return (
-            <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-dark)', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                <div style={{ background: 'white', padding: '40px', borderRadius: '15px', width: '100%', maxWidth: '400px', textAlign: 'center', boxShadow: 'var(--shadow)' }}>
-                    <div className="logo" style={{ color: 'var(--color-dark)', marginBottom: '10px' }}>Reserva do Rio <span style={{ fontSize: '0.9rem', color: 'red' }}>ADMIN</span></div>
-                    <p style={{ color: '#666', marginBottom: '20px', fontSize: '0.9rem' }}>Acesso restrito à gestão do Loteamento.</p>
-
-                    <input type="text" placeholder="Login de Administrador" value={loginUser} onChange={e => setLoginUser(e.target.value)} style={{ width: '100%', padding: '12px', margin: '10px 0', border: '1px solid #ddd', borderRadius: '8px' }} />
-                    <input type="password" placeholder="Senha" value={loginPass} onChange={e => setLoginPass(e.target.value)} style={{ width: '100%', padding: '12px', margin: '10px 0', border: '1px solid #ddd', borderRadius: '8px' }} />
-
-                    <button className="btn btn-secondary" style={{ width: '100%', marginTop: '20px', background: 'var(--color-dark)', color: 'white' }} onClick={handleAdminLogin}>Validar Acesso</button>
-                    <Link to="/" style={{ display: 'block', marginTop: '20px', color: '#999', fontSize: '0.8rem', textDecoration: 'none' }}>Voltar à Tela Principal</Link>
-                </div>
-            </div>
-        );
+        return <div className="admin-login"><form className="admin-login-card" onSubmit={handleAdminLogin}>
+            <Link to="/" className="admin-brand"><span className="admin-brand-icon"><Trees size={30}/></span><span>Reserva do Rio<small>PAINEL ADMINISTRATIVO</small></span></Link>
+            <h1>Bem-vindo à gestão.</h1><p>Entre para acompanhar o empreendimento.</p>
+            <label htmlFor="admin-login">Login</label><input id="admin-login" autoComplete="username" value={loginUser} onChange={e=>setLoginUser(e.target.value)} required />
+            <label htmlFor="admin-password">Senha</label><input id="admin-password" type="password" autoComplete="current-password" value={loginPass} onChange={e=>setLoginPass(e.target.value)} required />
+            {loginError&&<div className="admin-error" role="alert">{loginError}</div>}
+            <button type="submit" disabled={loginBusy}>{loginBusy?'Entrando…':'Acessar administração'}</button><Link to="/">Voltar ao site</Link>
+        </form></div>;
     }
 
     return (
-        <div style={{ minHeight: '100vh', background: '#f4f6F8' }}>
-            {/* Header */}
-            <div style={{ background: 'var(--color-dark)', padding: '15px 5%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' }}>
-                <Link to="/" className="logo" style={{ color: 'white', textDecoration: 'none' }}>Rio <span style={{ fontSize: '0.8rem' }}>ADMIN</span></Link>
-                <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                    <button onClick={() => { setActiveTab('crm'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'crm' ? 'white' : '#999', fontWeight: activeTab === 'crm' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
-                        1. Painel de Lotes (CRM)
-                    </button>
-                    <button onClick={() => { setActiveTab('approvals'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'approvals' ? 'var(--color-sand)' : '#999', fontWeight: activeTab === 'approvals' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
-                        2. Liberar Cadastros
-                    </button>
-                    <button onClick={() => { setActiveTab('site'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'site' ? 'white' : '#999', fontWeight: activeTab === 'site' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
-                        3. Mapa e Site Público
-                    </button>
-                    <button onClick={() => { setActiveTab('galeria'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'galeria' ? 'white' : '#999', fontWeight: activeTab === 'galeria' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
-                        4. Galeria
-                    </button>
-                    <button onClick={() => { setActiveTab('copywriting'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'copywriting' ? 'white' : '#999', fontWeight: activeTab === 'copywriting' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
-                        5. Textos e Copy
-                    </button>
-                    <button onClick={() => { setActiveTab('simconfig'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'simconfig' ? 'var(--color-sand)' : '#999', fontWeight: activeTab === 'simconfig' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
-                        6. Matriz Financeira
-                    </button>
-                    <button onClick={() => { setActiveTab('finance'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'finance' ? '#4caf50' : '#999', fontWeight: activeTab === 'finance' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
-                        7. Receita Geral
-                    </button>
-                    <button onClick={() => { setActiveTab('boletos'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'boletos' ? 'var(--color-river)' : '#999', fontWeight: activeTab === 'boletos' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
-                        8. Lançar Boletos
-                    </button>
-                    <button onClick={() => { setActiveTab('brokers'); setEditingLotUid(null); setIsCreatingLot(false); }} style={{ background: 'none', border: 'none', color: activeTab === 'brokers' ? 'var(--color-sand)' : '#999', fontWeight: activeTab === 'brokers' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}>
-                        9. Corretores
-                    </button>
-                    <Link to="/" className="btn btn-secondary" style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white', padding: '8px 20px', fontSize: '0.8rem', marginLeft: '20px', textDecoration: 'none' }}><i className="fas fa-home"></i> TELA PRINCIPAL</Link>
-                    <button onClick={async () => { await logoutAccount(); setIsAdminLoggedIn(false); }} className="btn btn-secondary" style={{ borderColor: 'red', color: 'red', padding: '8px 20px', fontSize: '0.8rem', marginLeft: '10px' }}>Sair</button>
-                </div>
-            </div>
+        <AdminShell activeTab={activeTab} onNavigate={navigateAdmin} lots={lots} pendingCount={pendingUsers.length} approvedCount={approvedUsers.length} reviewCount={approvedUsers.filter(u=>lots.find(l=>l.id===u.lote_id)?.status!=='Vendido').length} loading={lotsLoading} error={adminError || lotsError} onRefresh={refreshAdmin} onLogout={async()=>{try{await logoutAccount();setIsAdminLoggedIn(false);}catch(error){setAdminError(error.message);}}}>
 
-            <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 5%' }}>
 
                 {editingLot && (
                     <div key={editingLot.id} style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)', animation: 'fadeIn 0.3s' }}>
@@ -414,19 +377,7 @@ const AdminArea = () => {
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>Nome / Identificação do Lote (Ex: Lote 01):</label>
                                 <input
                                     type="text"
-                                    defaultValue={editingLot.id}
-                                    onBlur={async (e) => {
-                                        const newId = e.target.value;
-                                        if (newId === editingLot.id || !newId) return;
-                                        try {
-                                            await editLot(editingLot.id, { id: newId });
-                                            const newMapped = drawnLots.map(d => d.id === editingLot.id ? { ...d, id: newId } : d);
-                                            setDrawnLots(newMapped);
-                                            alert("Identificação atualizada!");
-                                        } catch (err) {
-                                            alert("Erro ao mudar ID");
-                                        }
-                                    }}
+                                    value={editingLot.id} readOnly aria-label="Identificação do lote (fixa)"
                                     style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc', fontWeight: 'bold', color: 'var(--color-river)' }}
                                 />
 
@@ -454,14 +405,13 @@ const AdminArea = () => {
                                     defaultValue={parseFloat((editingLot.size || '0').replace(',', '.').replace(/[^\d.]/g, '')).toFixed(2)}
                                     onBlur={async (e) => {
                                         const area = parseFloat(e.target.value);
-                                        const valorM2 = simConfig.valorBaseM2 || 250;
-                                        if (isNaN(area)) return;
+                                        
+                                        if (!Number.isFinite(area) || area <= 0) return;
                                         try {
                                             await editLot(editingLot.id, { 
-                                                size: area.toFixed(2).replace('.', ',') + 'm²',
-                                                price: area * valorM2
+                                                size: area.toFixed(2).replace('.', ',') + 'm²'
                                             });
-                                            alert("Área e Preço recalculados!");
+                                            alert("Área atualizada. O preço foi preservado.");
                                         } catch (err) {
                                             alert("Erro ao salvar área");
                                         }
@@ -484,7 +434,7 @@ const AdminArea = () => {
                                     style={{ width: '100%', padding: '10px', marginBottom: '5px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '1.1rem', fontWeight: 'bold' }}
                                 />
                                 <div style={{ fontSize: '0.85rem', color: 'var(--color-forest)', fontWeight: 'bold', marginBottom: '15px' }}>
-                                    Valor Formatado: R$ {Number(editingLot.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    Valor Formatado: R$ {Number(editingLot.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
                                 <small style={{ color: '#999', display: 'block', marginBottom: '15px' }}>* Mudar a Área aciona a multiplicação automática, mas você pode sobrescrever o valor livremente aqui.</small>
 
@@ -510,7 +460,7 @@ const AdminArea = () => {
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>CPF do Comprador (Vincular ao Portal):</label>
                                 <input 
                                     type="text" 
-                                    defaultValue={editingLot.clientCpf || ''} 
+                                    defaultValue={editingLot.client_cpf || ''} 
                                     onBlur={async (e) => {
                                         try {
                                             await editLot(editingLot.id, { client_cpf: e.target.value });
@@ -636,31 +586,28 @@ const AdminArea = () => {
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <div>
-                                <h3>Gerenciamento Mestre (CRM)</h3>
-                                <p style={{ color: '#666', fontSize: '0.9rem' }}>Passo 1: Este é o banco de dados. Cadastre fisicamente os lotes aqui.</p>
+                                <h3>Cadastro de lotes</h3>
+                                <p style={{ color: '#666', fontSize: '0.9rem' }}>Consulte as unidades, a disponibilidade e os dados do comprador.</p>
                             </div>
                             <button onClick={() => setIsCreatingLot(true)} className="btn btn-primary" style={{ padding: '10px 20px', background: 'var(--color-forest)', color: 'white' }}>
-                                <i className="fas fa-plus"></i> Novo Lote Oficial
+                                <i className="fas fa-plus"></i> Novo lote
                             </button>
                         </div>
 
-                        {lotsLoading ? <p>Carregando banco de dados...</p> : (
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <div className="admin-tools"><label className="admin-search"><Search size={17}/><input type="search" aria-label="Buscar lote ou cliente" placeholder="Buscar lote, cliente ou CPF" value={search} onChange={e=>setSearch(e.target.value)}/></label><select aria-label="Filtrar lotes por disponibilidade" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>{['Todos','Disponível','Reservado','Vendido'].map(status=><option key={status}>{status}</option>)}</select><span className="admin-result-count">{filteredLots.length} de {lots.length} lotes</span></div>
+                        {lotsLoading ? <p role="status">Carregando lotes…</p> : (
+                        <div className="admin-table-scroll"><table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
                                 <tr style={{ background: '#f9f9f9', color: '#666' }}>
-                                    <th style={{ padding: '15px 10px' }}>ID / Banco Dados</th>
-                                    <th style={{ padding: '15px 10px' }}>Status Base</th>
+                                    <th style={{ padding: '15px 10px' }}>Unidade</th>
+                                    <th style={{ padding: '15px 10px' }}>Disponibilidade</th>
                                     <th style={{ padding: '15px 10px' }}>Cliente Vinculado</th>
                                     <th style={{ padding: '15px 10px' }}>Preço/Área</th>
                                     <th style={{ padding: '15px 10px', textAlign: 'right' }}>Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {[...lots].sort((a, b) => {
-                                    const numA = parseInt(a.id.replace(/\D/g, '')) || 0;
-                                    const numB = parseInt(b.id.replace(/\D/g, '')) || 0;
-                                    return numA - numB;
-                                }).map((lot, idx) => (
+                                {filteredLots.map((lot, idx) => (
                                     <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
                                         <td style={{ padding: '15px 10px', fontWeight: 'bold', color: 'var(--color-dark)' }}>{lot.id}</td>
                                         <td style={{ padding: '15px 10px' }}>{lot.status}</td>
@@ -668,14 +615,14 @@ const AdminArea = () => {
                                             <strong>{lot.client || 'Livre'}</strong>
                                             {lot.clientPhone && <><br/><small style={{color:'var(--color-forest)'}}><i className="fab fa-whatsapp"></i> {lot.clientPhone}</small></>}
                                         </td>
-                                        <td style={{ padding: '15px 10px' }}>R$ {Number(lot.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} <br /><small style={{ color: '#999' }}>{lot.size}</small></td>
+                                        <td style={{ padding: '15px 10px' }}>R$ {Number(lot.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <br /><small style={{ color: '#999' }}>{lot.size}</small></td>
                                         <td style={{ padding: '15px 10px', textAlign: 'right' }}>
                                             <button onClick={() => setEditingLotUid(lot.id)} style={{ border: '1px solid var(--color-river)', background: 'transparent', color: 'var(--color-river)', padding: '6px 12px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Editar / Financeiro</button>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
+                        </table></div>
                         )}
                     </div>
                 )}
@@ -729,7 +676,7 @@ const AdminArea = () => {
                             </div>
                         ) : (
                             <div style={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <div className="admin-table-scroll"><table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                                     <thead>
                                         <tr style={{ background: '#f5f5f5', color: '#666', fontSize: '0.8rem' }}>
                                             <th style={{ padding: '10px' }}>Cliente</th>
@@ -772,7 +719,7 @@ const AdminArea = () => {
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                         )}
 
@@ -784,7 +731,7 @@ const AdminArea = () => {
                                 <p style={{ color: '#999', textAlign: 'center' }}>Nenhum acesso liberado ainda.</p>
                             ) : (
                                 <div style={{ overflowX: 'auto' }}>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: '#fcfcfc', borderRadius: '10px' }}>
+                                    <div className="admin-table-scroll"><table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: '#fcfcfc', borderRadius: '10px' }}>
                                         <thead>
                                             <tr style={{ borderBottom: '2px solid #ddd', color: '#333' }}>
                                                 <th style={{ padding: '15px' }}>Nome / Lote</th>
@@ -828,7 +775,7 @@ const AdminArea = () => {
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                         )}
                         </div>
@@ -945,8 +892,8 @@ const AdminArea = () => {
 
                 {activeTab === 'galeria' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
-                        <h3>4. Gerenciamento de Galeria Cloud</h3>
-                        <p style={{ color: '#666', marginBottom: '20px' }}>Arraste ou selecione arquivos para subir para a Web. Imagens e vídeos aparecerão para todos os clientes.</p>
+                        <h3>4. Fotos e vídeos do empreendimento</h3>
+                        <p style={{ color: '#666', marginBottom: '20px' }}>Selecione imagens ou vídeos para publicar. Imagens e vídeos aparecerão para todos os clientes.</p>
                         
                         <div style={{ background: '#f5f5f5', padding: '20px', borderRadius: '10px', marginBottom: '30px', border: '2px dashed #ccc', textAlign: 'center' }}>
                             <input type="file" multiple accept="image/*,video/mp4" onChange={async (e) => {
@@ -957,7 +904,7 @@ const AdminArea = () => {
                                         const newItem = await addGalleryItem(uploaded);
                                         setGalleryItems(prev => [newItem, ...prev]);
                                     } catch (err) {
-                                        alert(`Erro ao subir ${file.name}: ${err.message || "Erro desconhecido"}. Verifique o bucket 'gallery'.`);
+                                        alert(`Erro ao subir ${file.name}: ${err.message || "Erro desconhecido"}. Tente novamente em instantes.`);
                                         console.error(err);
                                     }
                                 }
@@ -968,13 +915,13 @@ const AdminArea = () => {
                             {galleryItems.map(item => (
                                 <div key={item.id} style={{ border: '1px solid #eee', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
                                     <div style={{ height: '120px', background: '#000' }}>
-                                        {item.type === 'image' && <img src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                                        {(item.type === 'localVideo' || item.url.includes('.mp4')) && <video src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls muted />}
+                                        {item.type === 'image' && <img loading="lazy" alt={item.caption || item.name || 'Mídia do empreendimento'} src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                                        {(item.type === 'localVideo' || item.url.includes('.mp4')) && <video preload="none" aria-label={item.name || 'Vídeo do empreendimento'} src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls muted />}
                                     </div>
                                     <div style={{ padding: '10px', display: 'flex', justifyContent: 'center' }}>
                                         <button 
                                             onClick={async () => {
-                                                if(confirm("Deseja remover esta mídia da nuvem?")) {
+                                                if(confirm("Remover esta mídia da galeria pública? O arquivo original será preservado.")) {
                                                     await deleteGalleryItem(item.id, item.url);
                                                     setGalleryItems(galleryItems.filter(i => i.id !== item.id));
                                                 }
@@ -994,9 +941,9 @@ const AdminArea = () => {
                 {activeTab === 'copywriting' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
                         <h3>5. Editor de Textos</h3>
-                        <textarea id="copyEditor" defaultValue={defaultCopy} style={{ width: '100%', height: '300px', padding: '15px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                        <textarea aria-label="Texto de apresentação do empreendimento" id="copyEditor" value={aboutCopy} onChange={e=>setAboutCopy(e.target.value)} style={{ width: '100%', height: '300px', padding: '15px', borderRadius: '8px', border: '1px solid #ddd' }} />
                         <button className="btn btn-primary" style={{ marginTop: '20px' }} onClick={async () => {
-                            const val = document.getElementById('copyEditor').value;
+                            const val = aboutCopy;
                             await setConfig('about_text', val);
                             alert('Atualizado!');
                         }}>Salvar Textos</button>
@@ -1006,7 +953,7 @@ const AdminArea = () => {
                 {/* --- 6. CONFIGURADOR DO SIMULADOR --- */}
                 {activeTab === 'simconfig' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
-                        <h3>6. Configurações Financeiras Globais (Simulador)</h3>
+                        <h3>Condições das novas simulações</h3>
                         <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '30px' }}>
                             Defina as diretrizes matemáticas que controlam o "Simulador Sem Surpresas" da sua Vitrine.
                         </p>
@@ -1014,22 +961,22 @@ const AdminArea = () => {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                             <div style={{ background: '#f5f5f5', padding: '15px', borderRadius: '8px', borderLeft: '4px solid var(--color-river)', gridColumn: '1 / 3' }}>
                                 <label style={{ display: 'block', fontWeight: 'bold' }}>Valor Base Global do Metro Quadrado (R$/m²)</label>
-                                <input id="cfg_valorm2" type="number" defaultValue={simConfig.valorBaseM2 || 250} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-forest)' }} />
+                                <input aria-label="Valor base do metro quadrado" id="cfg_valorm2" type="number" defaultValue={simConfig.valorBaseM2 || 250} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-forest)' }} />
                                 <small style={{ color: '#999' }}>Ao cadastrar um lote informando sua Área (m²), o sistema calculará automaticamente o preço oficial multiplicando a área por este valor.</small>
                             </div>
                             <div>
                                 <label style={{ display: 'block', fontWeight: 'bold' }}>Índice de Correção Anual (%)</label>
-                                <input id="cfg_taxa" type="number" defaultValue={simConfig.taxaAnual * 100} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc' }} />
+                                <input aria-label="Correção anual em porcentagem" id="cfg_taxa" type="number" defaultValue={simConfig.taxaAnual * 100} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc' }} />
                                 <small style={{ color: '#999' }}>Ex: 6 para 6% a.a de correção na fórmula.</small>
                             </div>
                             <div>
                                 <label style={{ display: 'block', fontWeight: 'bold' }}>Entrada Mínima (Reais)</label>
-                                <input id="cfg_entrada" type="number" defaultValue={simConfig.entradaMinima} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc' }} />
+                                <input aria-label="Entrada mínima" id="cfg_entrada" type="number" defaultValue={simConfig.entradaMinima} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc' }} />
                                 <small style={{ color: '#999' }}>Impede preenchimentos com entradas fictícias.</small>
                             </div>
                             <div>
                                 <label style={{ display: 'block', fontWeight: 'bold' }}>Desconto Especial À Vista (%)</label>
-                                <input id="cfg_desconto" type="number" defaultValue={simConfig.descontoAvista} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc' }} />
+                                <input aria-label="Desconto à vista em porcentagem" id="cfg_desconto" type="number" defaultValue={simConfig.descontoAvista} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc' }} />
                                 <small style={{ color: '#999' }}>Bônus mostrado caso o pagamento seja cash (Ex: 10).</small>
                             </div>
                             <div>
@@ -1050,15 +997,7 @@ const AdminArea = () => {
                             await setConfig('sim_config', newConf);
                             setSimConfig(newConf);
 
-                            // ATUALIZAÇÃO EM MASSA: Recalcular preços de todos os lotes com base no novo m2
-                            lots.forEach(async l => {
-                                const areaNum = parseFloat(l.size.replace(',', '.').replace(/[^\d.]/g, ''));
-                                if (!isNaN(areaNum)) {
-                                    await editLot(l.id, { price: areaNum * newConf.valorBaseM2 });
-                                }
-                            });
-
-                            alert("Parâmetros do simulador e preços de todos os lotes atualizados com sucesso!");
+                            alert("Condições atualizadas. Os preços dos lotes e contratos existentes foram preservados.");
                         }}>Salvar Matriz Financeira</button>
                     </div>
                 )}
@@ -1081,7 +1020,7 @@ const AdminArea = () => {
                                     )}
                                 </div>
 
-                                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                                <div className="admin-table-scroll"><table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                                     <thead>
                                         <tr style={{ borderBottom: '2px solid #eee', background: '#f9f9f9' }}>
                                             <th style={{ padding: '15px' }}>Mês/Parcela</th>
@@ -1095,8 +1034,8 @@ const AdminArea = () => {
                                             const currentLot = lots.find(l => l.id === financeSubView) || {};
                                             const total = currentLot?.totalParcelas || 120;
                                             const pagamentos = currentLot?.payments || [];
-                                            const baseParcela = currentLot?.simulation?.parcelaInicial || currentLot?.price / (currentLot?.totalParcelas || 120) || 0;
-                                            const taxaAnual = currentLot?.simulation?.taxa || 0.06;
+                                            const baseParcela = paymentAmount(currentLot,0);
+                                            const taxaAnual = currentLot?.simulation?.taxa ?? 0.06;
 
                                             return Array.from({ length: total }).map((_, idx) => {
                                                 const num = idx + 1;
@@ -1106,16 +1045,16 @@ const AdminArea = () => {
                                                 const isQuitado = pData.quitado || false;
 
                                                 const savePaymentUpdate = async (newPData) => {
-                                                    const updatedPayments = [...pagamentos];
-                                                    updatedPayments[idx] = { ...pData, ...newPData };
-                                                    await editLot(currentLot.id, { payments: updatedPayments });
+                                                    try { await updateSinglePayment(currentLot.id,idx,newPData);await reloadLots(); }
+                                                    catch(error){setAdminError(error.message);return false;}
+                                                    return true;
                                                 };
 
                                                 return (
                                                     <tr key={idx} style={{ borderBottom: '1px solid #eee', background: isQuitado ? '#f6fff8' : 'white' }}>
                                                         <td style={{ padding: '15px' }}>
                                                             <strong>{num.toString().padStart(2, '0')}/{total}</strong>
-                                                            <div style={{fontSize:'0.7rem', color:'#999'}}>Valor: R$ {valorReajustado.toLocaleString('pt-BR', {minimumFractionDigits:2})}</div>
+                                                            <div style={{fontSize:'0.7rem', color:'#999'}}>Valor: R$ {valorReajustado.toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2})}</div>
                                                         </td>
                                                         <td style={{ padding: '15px' }}>
                                                             {pData.boletoUrl ? (
@@ -1129,7 +1068,7 @@ const AdminArea = () => {
                                                                     if (!file) return;
                                                                     const reader = new FileReader();
                                                                     reader.onload = async () => {
-                                                                        await savePaymentUpdate({ boletoUrl: reader.result, boletoName: file.name });
+                                                                        if(!await savePaymentUpdate({ boletoUrl: reader.result, boletoName: file.name }))return;
                                                                         alert(`Boleto da parcela ${num} disponível para o cliente!`);
                                                                     };
                                                                     reader.readAsDataURL(file);
@@ -1143,7 +1082,7 @@ const AdminArea = () => {
                                                             <button
                                                                 onClick={() => savePaymentUpdate({ quitado: !isQuitado })}
                                                                 style={{ background: isQuitado ? 'var(--color-forest)' : '#eee', color: isQuitado ? 'white' : '#333', border: 'none', padding: '6px 12px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
-                                                                {isQuitado ? 'Dever Quitado' : 'Marcar Quitado'}
+                                                                {isQuitado ? 'Pagamento quitado' : 'Marcar Quitado'}
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -1151,7 +1090,7 @@ const AdminArea = () => {
                                             });
                                         })()}
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                         ) : (
                             <>
@@ -1188,7 +1127,7 @@ const AdminArea = () => {
 
                                 <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
                                     <h3>Relatório de Cobrança</h3>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+                                    <div className="admin-table-scroll"><table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
                                         <thead>
                                             <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
                                                 <th style={{ padding: '15px 10px' }}>Lote / Cliente</th>
@@ -1197,7 +1136,7 @@ const AdminArea = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {lots.filter(l => l.status === 'Vendido').map(l => (
+                                            {lots.filter(hasClient).map(l => (
                                                 <tr key={l.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
                                                     <td style={{ padding: '15px 10px' }}>
                                                         <strong>{l.id}</strong><br />
@@ -1213,7 +1152,7 @@ const AdminArea = () => {
                                                 </tr>
                                             ))}
                                         </tbody>
-                                    </table>
+                                    </table></div>
                                 </div>
                             </>
                         )}
@@ -1224,7 +1163,7 @@ const AdminArea = () => {
                 {activeTab === 'boletos' && (
                     <div style={{ background: 'white', borderRadius: '15px', padding: '30px', boxShadow: 'var(--shadow)' }}>
                         <h3>Lotes Vendidos - Lançamento de Boletos</h3>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+                        <div className="admin-table-scroll"><table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
                             <thead>
                                 <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
                                     <th style={{ padding: '15px 10px' }}>Lote / Cliente</th>
@@ -1232,7 +1171,7 @@ const AdminArea = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {lots.filter(l => l.status === 'Vendido' || l.client !== '-').map(l => (
+                                {lots.filter(hasClient).map(l => (
                                     <tr key={l.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
                                         <td style={{ padding: '15px 10px' }}>
                                             <strong>{l.id}</strong><br />
@@ -1248,7 +1187,7 @@ const AdminArea = () => {
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
+                        </table></div>
                     </div>
                 )}
 
@@ -1262,15 +1201,15 @@ const AdminArea = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '15px', alignItems: 'flex-end' }}>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold' }}>Nome do Corretor</label>
-                                    <input id="broker_name" type="text" placeholder="Ex: João Silva" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                    <input aria-label="Nome do corretor" id="broker_name" type="text" placeholder="Ex: João Silva" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold' }}>WhatsApp (Apenas Números)</label>
-                                    <input id="broker_phone" type="text" placeholder="Ex: 31988887777" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                    <input aria-label="WhatsApp do corretor" id="broker_phone" type="text" placeholder="Ex: 31988887777" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold' }}>CRECI (Opcional)</label>
-                                    <input id="broker_creci" type="text" placeholder="Ex: 12345" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                    <input aria-label="CRECI do corretor" id="broker_creci" type="text" placeholder="Ex: 12345" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
                                 </div>
                                 <button
                                     onClick={async () => {
@@ -1291,7 +1230,7 @@ const AdminArea = () => {
                             </div>
                         </div>
 
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <div className="admin-table-scroll"><table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
                                     <th style={{ padding: '15px' }}>Corretor</th>
@@ -1321,11 +1260,10 @@ const AdminArea = () => {
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
+                        </table></div>
                     </div>
                 )}
-            </div>
-        </div>
+        </AdminShell>
     );
 };
 

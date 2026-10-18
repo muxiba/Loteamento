@@ -1,4 +1,5 @@
 import {query,transaction} from './db.mjs';
+import {mergeAdminPayment} from './payments.mjs';
 import {actorFor,login,logout,rateLimit} from './auth.mjs';
 import {HttpError,checkOrigin,assertAdmin,assertClient,publicUser,hashPassword,normalizeCpf,safeText} from './security.mjs';
 import {presignUpload,completeUpload,fileDownload,assertOwnedFile} from './storage.mjs';
@@ -72,6 +73,16 @@ async function route(req,res,path,body) {
    return (await query('SELECT id,size,price,status,"desc" FROM lots ORDER BY id')).rows;
   }
   const id=path[1];
+  if(method==='PATCH' && path[2]==='payments') {
+   assertAdmin(actor);const index=Number(path[3]);
+   if(body.boletoUrl)await assertOwnedFile(actor,body.boletoUrl);
+   return transaction(async client=>{
+    const {rows}=await client.query('SELECT * FROM lots WHERE id=$1 FOR UPDATE',[id]);
+    if(!rows[0])throw new HttpError(404,'Lote não encontrado.');
+    const payments=mergeAdminPayment(rows[0].payments,index,body,Number(rows[0].totalParcelas || 120));
+    return updateLot(id,{payments,parcelasPagas:payments.filter(p=>p?.quitado).length},client);
+   });
+  }
   if(method==='POST' && path[2]==='proof') {
    assertClient(actor,id);const index=Number(body.index);
    if(!Number.isInteger(index)||index<0||index>600)throw new HttpError(400,'Parcela inválida.');
@@ -149,7 +160,7 @@ async function route(req,res,path,body) {
      await c.query('SELECT id FROM lots WHERE id=$1 FOR UPDATE',[user.lote_id]);
      const clash=await c.query("SELECT id FROM users WHERE lote_id=$1 AND status='approved' AND id<>$2",[user.lote_id,user.id]);
      if(clash.rows.length)throw new HttpError(409,'Este lote já possui outro cliente aprovado.');
-     await c.query('UPDATE lots SET status=$1,client=$2,client_cpf=$3,updated_at=now() WHERE id=$4',['Vendido',user.name,user.cpf,user.lote_id]);
+      await c.query('UPDATE lots SET status=$1,client=$2,client_cpf=$3,"totalParcelas"=$4,administrative_docs=COALESCE(administrative_docs,\'{}\'::jsonb) || $5::jsonb,updated_at=now() WHERE id=$6',['Vendido',user.name,user.cpf,user.total_parcelas || 120,JSON.stringify({clientPhone:user.telefone,simulation:user.simulation}),user.lote_id]);
     }
     const updated=await c.query("UPDATE users SET status=$1,approved_at=CASE WHEN $1='approved' THEN now() ELSE NULL END WHERE id=$2 RETURNING *",[body.status,user.id]);
     await c.query('DELETE FROM app_sessions WHERE user_id=$1',[user.id]);return publicUser(updated.rows[0]);
